@@ -1,0 +1,3 @@
+sounddevice
+spacy==3.5.3
+
