@@ -1,0 +1,43 @@
+from transformers import pipeline
+from gtts import gTTS
+import os
+
+# Set up a text-generation model using Hugging Face
+# Replace 'gpt2' with your chosen LLM model
+generator = pipeline('text-generation', model='gpt2')
+
+
+def get_llm_response(input_text):
+    # Generate a response using the LLM model
+    output = generator(input_text, max_length=50, num_return_sequences=1)
+    response = output[0]['generated_text']
+    return response
+
+# Step 2: Convert the LLM output to speech using gTTS (Google Text-to-Speech)
+
+
+def text_to_speech(text, lang='en'):
+    tts = gTTS(text=text, lang=lang)
+    tts.save("output.mp3")
+    # This plays the audio, use your system's audio player here
+    os.system("mpg321 output.mp3")
+
+# Main loop
+
+
+def main():
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() == 'exit':
+            break
+
+        # Get response from the LLM
+        response = get_llm_response(user_input)
+        print(f"AI: {response}")
+
+        # Convert response to speech and play it
+        text_to_speech(response)
+
+
+if __name__ == "__main__":
+    main()
