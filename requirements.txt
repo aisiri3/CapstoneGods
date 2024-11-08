@@ -2,6 +2,6 @@ sounddevice
 spacy==3.5.3
 TTS
 torch
-transfomers
+transformers==4.33.0
 accelerate
 
