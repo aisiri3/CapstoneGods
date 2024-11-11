@@ -31,8 +31,13 @@ def get_llama_response(llama_pipeline, prompt: str) -> None:
     end_time = time.time()
     elapsed_time = end_time - start_time  # Calculate elapsed time
 
-    print("\nChatbot:", sequences[0]["generated_text"])
+    # Response_text:
+    response_text = sequences[0]["generated_text"]
+
+    print("\nChatbot:", response_text)
     print(f"\nResponse generated in {elapsed_time:.2f} seconds")
+
+    return response_text
 
 
 
