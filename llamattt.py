@@ -46,7 +46,7 @@ def get_llama_response(prompt: str) -> str:
     return answer_text
 
 
-output_dir = "/Users/ramita/Documents/GitHub/CapstoneGods/Llama TTT output"  # Replace with your desired path
+output_dir = "Llama TTT output"  # Replace with your desired path
 
 os.makedirs(output_dir, exist_ok=True)
 
