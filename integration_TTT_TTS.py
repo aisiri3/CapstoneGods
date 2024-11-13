@@ -9,9 +9,11 @@ import sounddevice as sd
 import soundfile as sf
 
 from Coqui_English_python_workflow import init_TTS_model, TTS_workflow, playback_output_speech
-from textToText_english_workflow import init_ttt_model, get_llama_response
+from textToText_english_workflow import login_huggingface, init_ttt_model, get_llama_response
 
 if __name__ == "__main__":
+
+    login_huggingface("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")
 
     llama_pipeline = init_ttt_model()
 

@@ -4,6 +4,11 @@ import torch
 import accelerate
 from transformers import AutoTokenizer
 import time
+from huggingface_hub import login
+
+def login_huggingface(huggingface_API):
+
+    login(huggingface_API)
 
 
 def init_ttt_model():
@@ -43,14 +48,12 @@ def get_llama_response(llama_pipeline, prompt: str) -> None:
 
 if __name__ == "__main__":
 
+    login_huggingface("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")
+
     llama_pipeline = init_ttt_model()
 
     prompts = [
-        "What colour is an apple?",
-        "Can you explain why leaves change color in autumn?",
-        "Imagine you're an explorer discovering an ancient civilization in the jungle. Describe the scene and your feelings.",
-        "Provide a summary of the key points on climate change and how individuals can contribute to reducing their carbon footprint.",
-        "Write a short story about a scientist who invents a machine that can communicate with animals. Describe the first animal they speak to, the conversation that unfolds, and the scientist's reaction to learning how animals perceive humans."
+        "What colour is an apple?"
     ]
 
     for i, prompt in enumerate(prompts, 1):
