@@ -42,7 +42,7 @@ body {
 
 #chatbox {
     width: 350px;
-    height: 700px;
+    height: 670px;
     padding: 10px;
     border-radius: 15px;
     background-color: rgba(128, 128, 128, 0.58);
@@ -107,4 +107,14 @@ button {
 
 button:hover {
     background-color: #200a50;
+}
+
+#replayButton {
+    margin-top: 20px;
+    border-radius: 7px;
+    background-color: #200a50;
+}
+
+#replayButton:hover {
+    background-color: black;
 }

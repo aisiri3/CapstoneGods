@@ -29,13 +29,42 @@ async function sendMessage() {
         botDiv.className = "outputMessage";
         botDiv.innerText = outputMessage;
         conversationBox.appendChild(botDiv);
-
         conversationBox.scrollTop = conversationBox.scrollHeight;
-        await fetch('/play_audio', { method: 'POST' });
+
+        // update placeholder vid with lipsync vid 
+        const avatarVideo = document.getElementById("avatarVideo");
+        avatarVideo.src = "static/result_voice.mp4";
+        avatarVideo.loop = false; // Play only once
+
+        avatarVideo.onended = () => {
+            // revert back to placeholder video once lipsync video finishes
+            avatarVideo.src = "/static/placeholder.mp4";
+            avatarVideo.loop = true;
+        };
 
         // clear input field
         inputField.value = "";
     }
+}
+
+function replayLastResponse() {
+    const avatarVideo = document.getElementById("avatarVideo");
+
+    // Reload and play the last response video explicitly
+    avatarVideo.src = "static/result_voice.mp4";  // Ensure the video source is set
+    avatarVideo.loop = false;                      // Play only once
+    avatarVideo.load();                            // Force reload of the video source
+    avatarVideo.play();                            // Play the video
+
+    console.log("Replaying the last response video.");
+
+    // Handle end of video to revert to placeholder
+    avatarVideo.onended = () => {
+        avatarVideo.src = "/static/placeholder.mp4";  // Switch back to placeholder video
+        avatarVideo.loop = true;                      // Loop the placeholder video
+        avatarVideo.load();                           // Ensure placeholder reloads
+        avatarVideo.play();                           // Play placeholder in a loop
+    };
 }
 
 function sendMessageOnEnter(event) {
