@@ -65,7 +65,8 @@ body {
 }
 
 .userMessage,
-.outputMessage {
+.outputMessage,
+.loadingMessage {
     padding: 10px;
     border-radius: 7px;
     margin: 5px 0;
@@ -83,6 +84,14 @@ body {
     background-color: rgba(45, 45, 45, 0.627);
     align-self: flex-start;
     color:#f8f8f8;
+    font-size: 14px;
+}
+
+.loadingMessage {
+    background-color: rgba(45, 45, 45, 0.627);
+    align-self: flex-start;
+    color:#b0b0b0;
+    font-style: italic;
     font-size: 14px;
 }
 

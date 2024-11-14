@@ -19,6 +19,9 @@ async function sendMessage() {
         // display input msg
         displayMessage(userMessage, "userMessage", conversationBox);
 
+        // // display loading
+        displayMessage("Loading response...", "loadingMessage", conversationBox);
+
         // send to server and get response
         const data = await fetch('/speak', {
             method: 'POST',
@@ -27,7 +30,7 @@ async function sendMessage() {
         }).then(response => response.json());
 
         // display response
-        displayMessage(data.response, "outputMessage", conversationBox);
+        replaceLoadingMessageWithResponse(data.response, conversationBox);
         playVideo("static/result_voice.mp4", false);
 
         avatarVideo.onended = () => playVideo("/static/placeholder.mp4", true);
@@ -64,6 +67,16 @@ function displayMessage(text, className, container) {
     messageDiv.innerText = text;
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
+}
+
+// replace loading icon with text output
+function replaceLoadingMessageWithResponse(responseText, conversationBox) {
+    const loadingMessage = conversationBox.querySelector('.loadingMessage');
+    if (loadingMessage) {
+        loadingMessage.innerText = responseText;
+        loadingMessage.classList.remove('loadingMessage');
+        loadingMessage.classList.add('outputMessage');
+    }
 }
 
 function playVideo(src, loop = false) {
