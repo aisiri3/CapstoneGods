@@ -21,7 +21,6 @@ body {
 .right {
     width: 30%;
     right: 0;
-    /* background-color: #83cfffa5; */
     background-color: rgba(232, 212, 158, 0.736);
 }
 
@@ -30,7 +29,11 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    text-align: center;
+    /* text-align: center; */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 #avatarVideo {

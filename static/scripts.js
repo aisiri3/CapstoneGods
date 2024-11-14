@@ -1,75 +1,77 @@
+async function initializeApp() {
+    const conversationBox = document.getElementById("messagesContainer");
+    const avatarVideo = document.getElementById("avatarVideo");
+
+    // display english introduction
+    const data = await fetch('/initialize').then(response => response.json());
+    displayMessage(data.intro_message, "outputMessage", conversationBox);
+    playVideo("static/intro_english.mp4", false);
+
+    avatarVideo.onended = () => playVideo("/static/placeholder.mp4", true);
+}
+
 async function sendMessage() {
     const inputField = document.getElementById("userInput");
     const conversationBox = document.getElementById("messagesContainer");
     const userMessage = inputField.value;
 
     if (userMessage) {
-        // display user's msg in chat
-        const userDiv = document.createElement("div");
-        userDiv.className = "userMessage";
-        userDiv.innerText = userMessage;
-        conversationBox.appendChild(userDiv);
+        // display input msg
+        displayMessage(userMessage, "userMessage", conversationBox);
 
-        // scroll to bottom to show the latest message
-        conversationBox.scrollTop = conversationBox.scrollHeight;
-
-        // send message to server
-        const response = await fetch('/speak', {
+        // send to server and get response
+        const data = await fetch('/speak', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: userMessage })
-        });
-
-        // get the response from server
-        const data = await response.json();
-        const outputMessage = data.response;
+        }).then(response => response.json());
 
         // display response
-        const botDiv = document.createElement("div");
-        botDiv.className = "outputMessage";
-        botDiv.innerText = outputMessage;
-        conversationBox.appendChild(botDiv);
-        conversationBox.scrollTop = conversationBox.scrollHeight;
+        displayMessage(data.response, "outputMessage", conversationBox);
+        playVideo("static/result_voice.mp4", false);
 
-        // update placeholder vid with lipsync vid 
-        const avatarVideo = document.getElementById("avatarVideo");
-        avatarVideo.src = "static/result_voice.mp4";
-        avatarVideo.loop = false; // Play only once
-
-        avatarVideo.onended = () => {
-            // revert back to placeholder video once lipsync video finishes
-            avatarVideo.src = "/static/placeholder.mp4";
-            avatarVideo.loop = true;
-        };
-
-        // clear input field
+        avatarVideo.onended = () => playVideo("/static/placeholder.mp4", true);
         inputField.value = "";
     }
 }
 
-function replayLastResponse() {
-    const avatarVideo = document.getElementById("avatarVideo");
-
-    // Reload and play the last response video explicitly
-    avatarVideo.src = "static/result_voice.mp4";  // Ensure the video source is set
-    avatarVideo.loop = false;                      // Play only once
-    avatarVideo.load();                            // Force reload of the video source
-    avatarVideo.play();                            // Play the video
-
-    console.log("Replaying the last response video.");
-
-    // Handle end of video to revert to placeholder
-    avatarVideo.onended = () => {
-        avatarVideo.src = "/static/placeholder.mp4";  // Switch back to placeholder video
-        avatarVideo.loop = true;                      // Loop the placeholder video
-        avatarVideo.load();                           // Ensure placeholder reloads
-        avatarVideo.play();                           // Play placeholder in a loop
-    };
+async function replayLastResponse() {
+    try {
+        const response = await fetch("static/result_voice.mp4", { method: "HEAD" });
+        if (response.ok) {
+            playVideo("static/result_voice.mp4", false);
+            console.log("Replaying the last response video.");
+        }
+        else {
+            playVideo("static/intro_english.mp4", false);
+            console.log("Replaying the introduction video.");
+        }
+    } catch (error) {
+        console.error("No videos available.");
+    }
 }
 
 function sendMessageOnEnter(event) {
-    // to send by pressing enter on keyboard
     if (event.key === "Enter") {
         sendMessage();
     }
 }
+
+// helper functions
+function displayMessage(text, className, container) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = className;
+    messageDiv.innerText = text;
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+function playVideo(src, loop = false) {
+    const avatarVideo = document.getElementById("avatarVideo");
+    avatarVideo.src = src;
+    avatarVideo.loop = loop;
+    avatarVideo.load();
+    avatarVideo.play();
+}
+
+window.onload = initializeApp;
