@@ -1,3 +1,6 @@
+const placeholder_path = "/static/placeholder.mp4";
+const intro_path = "/static/intro_english.mp4";
+
 async function initializeApp() {
     const conversationBox = document.getElementById("messagesContainer");
     const avatarVideo = document.getElementById("avatarVideo");
@@ -5,9 +8,9 @@ async function initializeApp() {
     // display english introduction
     const data = await fetch('/initialize').then(response => response.json());
     displayMessage(data.intro_message, "outputMessage", conversationBox);
-    playVideo("static/intro_english.mp4", false);
+    playVideo(intro_path, false);
 
-    avatarVideo.onended = () => playVideo("/static/placeholder.mp4", true);
+    avatarVideo.onended = () => playVideo(placeholder_path, true);
 }
 
 async function sendMessage() {
@@ -29,11 +32,11 @@ async function sendMessage() {
             body: JSON.stringify({ text: userMessage })
         }).then(response => response.json());
 
-        // display response
+        // display response and play lipsync video
         replaceLoadingMessageWithResponse(data.response, conversationBox);
         playVideo("static/result_voice.mp4", false);
 
-        avatarVideo.onended = () => playVideo("/static/placeholder.mp4", true);
+        avatarVideo.onended = () => playVideo(placeholder_path, true);
         inputField.value = "";
     }
 }
@@ -46,7 +49,7 @@ async function replayLastResponse() {
             console.log("Replaying the last response video.");
         }
         else {
-            playVideo("static/intro_english.mp4", false);
+            playVideo(intro_path, false);
             console.log("Replaying the introduction video.");
         }
     } catch (error) {

@@ -10,3 +10,5 @@ torchvision
 tqdm
 numba
 scipy
+transformers==4.33.0
+accelerate
