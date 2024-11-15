@@ -1,0 +1,35 @@
+{
+    "data": [
+      {"prompt": "Hai, macam mana keadaan kau sekarang?", "answer": "Alhamdulillah, aku sihat. Kau macam mana?"},
+      {"prompt": "Kau dengar berita pasal penyakit baru-baru ni?", "answer": "Ya, denggi dengan COVID makin merebak."},
+      {"prompt": "Memang bahaya sekarang, kena berhati-hati.", "answer": "Betul, aku pun selalu jaga-jaga sekarang."},
+      {"prompt": "Kau pernah kena penyakit yang serius tak?", "answer": "Pernah, masa kecil aku pernah kena ruam denggi."},
+      {"prompt": "Susah tak masa kena ruam tu?", "answer": "Memang susah, rasa lemah sangat."},
+      {"prompt": "Sekarang ni banyak orang kena demam panas.", "answer": "Ya, demam panas bahaya, kena pantang."},
+      {"prompt": "Ada vaksin untuk demam panas tak?", "answer": "Tak ada lagi, cuma ada cara untuk jaga kesihatan saja."},
+      {"prompt": "Kau pernah ambil darah tak?", "answer": "Pernah, memang sakit bila nurse cucuk."},
+      {"prompt": "Kalau kita pengsan masa ambil darah?", "answer": "Ada orang yang pengsan sebab tak tahan tengok darah."},
+      {"prompt": "Ada berita tentang Nipah Virus baru-baru ni.", "answer": "Seram, banyak orang yang meninggal dulu sebab virus tu."},
+      {"prompt": "Kau tahu macam mana virus tu tersebar?", "answer": "Tak pasti, mungkin dari pokok atau haiwan."},
+      {"prompt": "Katanya doktor-doktor sekarang hebat kawal COVID.", "answer": "Ya, Doktor Noor Hisham memang dihormati ramai."},
+      {"prompt": "Kita patut jaga kesihatan setiap hari, kan?", "answer": "Betul, penting untuk elak penyakit merebak."},
+      {"prompt": "Ada tak cara untuk elak demam?", "answer": "Pakai mask dan jaga kebersihan selalu."},
+      {"prompt": "Apa pendapat kau pasal obesiti makin meningkat?", "answer": "Memang perlu jaga pemakanan supaya tak jadi obesiti."},
+      {"prompt": "Ramai orang kena tekanan darah tinggi sekarang.", "answer": "Betul, perlu kawal pemakanan dan senaman."},
+      {"prompt": "Kau takut dengan jarum masa cucuk?", "answer": "Ya, memang tak suka tapi terpaksa buat."},
+      {"prompt": "Kau pernah buat check-up?", "answer": "Pernah, doktor kata aku sihat."},
+      {"prompt": "Kau rasa tak macam banyak penyakit sekarang?", "answer": "Betul, rasa macam setiap masa ada penyakit baru."},
+      {"prompt": "Ada tips untuk kekal sihat?", "answer": "Minum air banyak dan jaga pemakanan."},
+      {"prompt": "Kau selalu tengok berita kesihatan?", "answer": "Selalu, nak tahu perkembangan semasa."},
+      {"prompt": "Macam mana kau jaga diri dari penyakit?", "answer": "Aku selalu basuh tangan dan elak tempat sesak."},
+      {"prompt": "Kau pernah kena COVID?", "answer": "Alhamdulillah, tak pernah tapi kena berjaga-jaga."},
+      {"prompt": "Apa yang kau rasa pasal vaksin COVID?", "answer": "Penting untuk cegah penyakit, aku dah ambil dos lengkap."},
+      {"prompt": "Doktor ada nasihat apa untuk kesihatan?", "answer": "Doktor selalu pesan jangan abaikan senaman."},
+      {"prompt": "Pernah dengar pasal penyakit misteri?", "answer": "Ya, ada penyakit yang belum ada penawar."},
+      {"prompt": "Kat sekolah kau ada sesi kesihatan?", "answer": "Ya, selalu ada pemeriksaan suhu dan kebersihan."},
+      {"prompt": "Apa yang paling kau tak suka pasal sakit?", "answer": "Aku paling tak suka muntah dan rasa lemah."},
+      {"prompt": "Orang ramai kata jangan takut dengan vaksin.", "answer": "Betul, vaksin bantu kita kekal sihat."},
+      {"prompt": "Kau ada buat aktiviti sihat?", "answer": "Aku selalu jalan pagi dan minum jus buah-buahan."}
+    ]
+    }
+    

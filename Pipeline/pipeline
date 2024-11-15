@@ -4,7 +4,7 @@ import os
 
 # Set up a text-generation model using Hugging Face
 # Replace 'gpt2' with your chosen LLM model
-generator = pipeline('text-generation', model='gpt2')
+generator = pipeline('text-generation', model='meta-llama/Llama-3.1-405B')
 
 
 def get_llm_response(input_text):
