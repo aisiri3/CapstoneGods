@@ -17,8 +17,13 @@ async function sendMessage() {
     const inputField = document.getElementById("userInput");
     const conversationBox = document.getElementById("messagesContainer");
     const userMessage = inputField.value;
+    const sendButton = document.querySelector("#inputArea button");
 
     if (userMessage) {
+        // disable input field and send button
+        inputField.disabled = true;
+        sendButton.disabled = true;
+
         // display input msg
         displayMessage(userMessage, "userMessage", conversationBox);
 
@@ -37,6 +42,8 @@ async function sendMessage() {
         playVideo("static/result_voice.mp4", false);
 
         avatarVideo.onended = () => playVideo(placeholder_path, true);
+        inputField.disabled = false;
+        sendButton.disabled = false;
         inputField.value = "";
     }
 }
@@ -58,7 +65,9 @@ async function replayLastResponse() {
 }
 
 function sendMessageOnEnter(event) {
-    if (event.key === "Enter") {
+    const inputField = document.getElementById("userInput");
+    const sendButton = document.querySelector("#inputArea button"); // Select the Send button
+    if (!inputField.disabled && !sendButton.disabled && event.key === "Enter") {
         sendMessage();
     }
 }
