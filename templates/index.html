@@ -6,19 +6,30 @@
     <link rel="stylesheet" href="/static/styles.css">
     <script src="/static/scripts.js"></script>
 </head>
-<body>
-    <div id="mainContainer">
-        <!-- avatar, other elements -->
-        <div id="avatar"></div>
+<body onload="initializeApp()">
+    <div class="split left">
+        <!-- Avatar -->
+        <video id="avatarVideo" autoplay loop controls>
+            <source src="static/placeholder.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
 
-        <!-- Chatbox -->
-        <div id="chatbox">
-            <div id="messagesContainer"></div>
-            
-            <div id="inputArea">
-                <input type="text" id="userInput" placeholder="Talk to your language buddy!" onkeydown="sendMessageOnEnter(event)"/>
-                <button onclick="sendMessage()">Send</button>
+    <div class="split right">
+        <div class="centered">
+            <!-- Chatbox -->
+            <div id="chatbox">
+                <div id="messagesContainer"></div>
+                
+                <div id="inputArea">
+                    <input type="text" id="userInput" placeholder="Talk to your language buddy!" onkeydown="sendMessageOnEnter(event)"/>
+                    <button onclick="sendMessage()">Send</button>
+                </div>
             </div>
+            
+            <!-- button to replay lipsync just to visualise, can be removed later -->
+            <button id="replayButton" onclick="replayLastResponse()">Replay Last Response</button>
+
         </div>
     </div>
 </body>

@@ -1,4 +1,15 @@
 sounddevice
 spacy==3.5.3
-TTS
-
+TTS==0.22.0
+numpy==1.22.0
+opencv-contrib-python>=4.2.0.34
+opencv-python
+torchvision
+tqdm
+numba
+scipy
+transformers==4.33.0
+accelerate
+matplotlib==3.8.4
+scipy==1.11.4
+librosa==0.8.0

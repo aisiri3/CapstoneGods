@@ -1,0 +1,10 @@
+.venv/
+conversation_input_text.txt
+
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+
+# Ignore output files
+static/result_voice.mp4
+outputs/user_output.wav

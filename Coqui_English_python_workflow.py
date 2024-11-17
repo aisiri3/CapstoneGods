@@ -8,6 +8,7 @@ from TTS.api import TTS
 import sounddevice as sd
 import soundfile as sf
 
+
 # It is taking quite some time (about 6 seconds) to import the libraries (so the output becomes delayed) - currently running on CPU, should be faster on GPU:
 print(f"Import time: {time.time() - start_time:.2f} seconds")
 
@@ -19,16 +20,14 @@ def init_TTS_model():
     #   1. Voice cloning - Can specify a speaker reference with a short audio sample of the target speaker's voice for voice cloning. 
     #   2. Multi lingual capability - Can set the language parameter (eg. "en" for english) to generate speech in multiple languages. 
 
-    # Get the specified device (CPU or GPU):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # # Get the specified device (CPU or GPU):
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    # # Use the XTTS version 2 model:
+    tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")  # For now, we remove the gpu=True parameter because we are running on CPU
 
-    # Use the XTTS version 2 model:
-    tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2") # For now, we remove the gpu=True parameter because we are running on CPU
-
-    # Move the TTS model to the specified device:
-    tts.to(device)
-
+    # # Move the TTS model to the specified device:
+    # tts.to(device)
 
     return tts
 
@@ -37,7 +36,7 @@ def init_TTS_model():
 def TTS_workflow(tts, input_text, speaker_path, output_path):
     # Parameters:
     #   1. tts - The TTS model (initialised with init_TTS_model() function)
-    #   2. input_text - The text to be converted
+    #   2. input_text - The text to be converted (string)
     #   3. speaker_path - Path to the speaker reference .wav file
     #   4. output_path - Path to save the generated audio .wav file
 
@@ -77,6 +76,7 @@ if __name__ == "__main__":
     # Press y ("Otherwise, I agree to the terms of the non-commercial CPML: https://coqui.ai/cpml") 
     # -> First time it will take some time to download the TTS model locally but subsequent times will be faster because model is already downloaded
     tts_model = init_TTS_model() 
+    
 
     # Speaker reference:
     # Currently, taken from business_ethics.wav file (3 min audio clip):

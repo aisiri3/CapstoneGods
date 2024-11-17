@@ -1,46 +1,102 @@
+const placeholder_path = "/static/placeholder.mp4";
+const intro_path = "/static/intro_english.mp4";
+
+async function initializeApp() {
+    const conversationBox = document.getElementById("messagesContainer");
+    const avatarVideo = document.getElementById("avatarVideo");
+
+    // display english introduction
+    const data = await fetch('/initialize').then(response => response.json());
+    displayMessage(data.intro_message, "outputMessage", conversationBox);
+    playVideo(intro_path, false);
+
+    avatarVideo.onended = () => playVideo(placeholder_path, true);
+}
+
 async function sendMessage() {
     const inputField = document.getElementById("userInput");
     const conversationBox = document.getElementById("messagesContainer");
     const userMessage = inputField.value;
+    const sendButton = document.querySelector("#inputArea button");
 
     if (userMessage) {
-        // display user's msg in chat
-        const userDiv = document.createElement("div");
-        userDiv.className = "userMessage";
-        userDiv.innerText = userMessage;
-        conversationBox.appendChild(userDiv);
+        // disable input field and send button
+        inputField.disabled = true;
+        sendButton.disabled = true;
 
-        // scroll to bottom to show the latest message
-        conversationBox.scrollTop = conversationBox.scrollHeight;
+        // display input msg
+        displayMessage(userMessage, "userMessage", conversationBox);
 
-        // send message to server
-        const response = await fetch('/speak', {
+        // // display loading
+        displayMessage("Loading response...", "loadingMessage", conversationBox);
+
+        // send to server and get response
+        const data = await fetch('/speak', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: userMessage })
-        });
+        }).then(response => response.json());
 
-        // get the response from server
-        const data = await response.json();
-        const outputMessage = data.response;
+        // display response and play lipsync video
+        replaceLoadingMessageWithResponse(data.response, conversationBox);
+        playVideo("static/result_voice.mp4", false);
 
-        // display response
-        const botDiv = document.createElement("div");
-        botDiv.className = "outputMessage";
-        botDiv.innerText = outputMessage;
-        conversationBox.appendChild(botDiv);
-
-        conversationBox.scrollTop = conversationBox.scrollHeight;
-        await fetch('/play_audio', { method: 'POST' });
-
-        // clear input field
+        avatarVideo.onended = () => playVideo(placeholder_path, true);
+        inputField.disabled = false;
+        sendButton.disabled = false;
         inputField.value = "";
     }
 }
 
+async function replayLastResponse() {
+    try {
+        const response = await fetch("static/result_voice.mp4", { method: "HEAD" });
+        if (response.ok) {
+            playVideo("static/result_voice.mp4", false);
+            console.log("Replaying the last response video.");
+        }
+        else {
+            playVideo(intro_path, false);
+            console.log("Replaying the introduction video.");
+        }
+    } catch (error) {
+        console.error("No videos available.");
+    }
+}
+
 function sendMessageOnEnter(event) {
-    // to send by pressing enter on keyboard
-    if (event.key === "Enter") {
+    const inputField = document.getElementById("userInput");
+    const sendButton = document.querySelector("#inputArea button"); // Select the Send button
+    if (!inputField.disabled && !sendButton.disabled && event.key === "Enter") {
         sendMessage();
     }
 }
+
+// helper functions
+function displayMessage(text, className, container) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = className;
+    messageDiv.innerText = text;
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+// replace loading icon with text output
+function replaceLoadingMessageWithResponse(responseText, conversationBox) {
+    const loadingMessage = conversationBox.querySelector('.loadingMessage');
+    if (loadingMessage) {
+        loadingMessage.innerText = responseText;
+        loadingMessage.classList.remove('loadingMessage');
+        loadingMessage.classList.add('outputMessage');
+    }
+}
+
+function playVideo(src, loop = false) {
+    const avatarVideo = document.getElementById("avatarVideo");
+    avatarVideo.src = src;
+    avatarVideo.loop = loop;
+    avatarVideo.load();
+    avatarVideo.play();
+}
+
+window.onload = initializeApp;
