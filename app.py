@@ -67,7 +67,7 @@ print(torch.cuda.memory_cached())  # Print cached memory
 
 speaker_path = "inputs/business-ethics.wav"  # speaker reference from the inputs
 output_path = "outputs/user_output.wav"      # store output audio in the outputs
-video_input_path = "inputs/1min_input.mp4"     # input video for lipsync -- use 15s vid for now for efficiency (assume audio <= 15s)
+video_input_path = "inputs/input2.mp4"     # input video for lipsync
 
 @app.route('/')
 def index():

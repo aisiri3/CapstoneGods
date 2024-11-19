@@ -1,5 +1,7 @@
 const placeholder_path = "/static/placeholder.mp4";
 const intro_path = "/static/intro_english.mp4";
+const filler_path = "/static/filler_1.mp4";
+const lipsync_path = "/static/result_voice.mp4";
 
 async function initializeApp() {
     const conversationBox = document.getElementById("messagesContainer");
@@ -10,6 +12,7 @@ async function initializeApp() {
     displayMessage(data.intro_message, "outputMessage", conversationBox);
     playVideo(intro_path, false);
 
+    // set paths for video status
     avatarVideo.onended = () => playVideo(placeholder_path, true);
 }
 
@@ -30,6 +33,9 @@ async function sendMessage() {
         // // display loading
         displayMessage("Loading response...", "loadingMessage", conversationBox);
 
+        // // play filler once
+        // playVideo(filler_path, false);
+
         // send to server and get response
         const data = await fetch('/speak', {
             method: 'POST',
@@ -39,8 +45,9 @@ async function sendMessage() {
 
         // display response and play lipsync video
         replaceLoadingMessageWithResponse(data.response, conversationBox);
-        playVideo("static/result_voice.mp4", false);
+        playVideo(lipsync_path, false);
 
+        videoStatus = "placeholder";
         avatarVideo.onended = () => playVideo(placeholder_path, true);
         inputField.disabled = false;
         sendButton.disabled = false;
@@ -50,9 +57,9 @@ async function sendMessage() {
 
 async function replayLastResponse() {
     try {
-        const response = await fetch("static/result_voice.mp4", { method: "HEAD" });
+        const response = await fetch(lipsync_path, { method: "HEAD" });
         if (response.ok) {
-            playVideo("static/result_voice.mp4", false);
+            playVideo(lipsync_path, false);
             console.log("Replaying the last response video.");
         }
         else {

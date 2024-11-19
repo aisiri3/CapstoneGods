@@ -14,11 +14,11 @@ body {
 .left {
     width: 70%;
     left: 0;
-    background-color: rgba(232, 201, 117, 0.736);
+    background-color: rgba(214,214,214,255);
     /* background-color: rgba(46, 46, 46, 0.872); */
     display: flex;
     justify-content: flex-end;
-    /* border-right: 1px solid #000000; */
+    border-right: 1px solid #00000051;
 }
   
 .right {
@@ -47,8 +47,8 @@ body {
 }
 
 #chatbox {
-    width: 350px;
-    height: 670px;
+    width: 45vh;
+    height: 80vh;
     padding: 10px;
     border-radius: 15px;
     background-color: rgba(128, 128, 128, 0.58);
