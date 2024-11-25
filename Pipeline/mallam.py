@@ -117,7 +117,7 @@ def evaluate_model(generator, tokenizer, device, data_path='test.json'):
 
         # Write results to Excel file
         df = pd.DataFrame(results)
-        df.to_excel('evaluation_results.xlsx', index=False)
+        df.to_excel('mallam_results.xlsx', index=False)
 
         return results
 
@@ -158,8 +158,8 @@ def main():
     # Run evaluation
     results = evaluate_model(generator, tokenizer, device=device)
 
-    # Results are saved to 'evaluation_results.xlsx'
-    print("Evaluation complete. Results saved to 'evaluation_results.xlsx'.")
+    # Results are saved to 'mallam_results.xlsx'
+    print("Evaluation complete. Results saved to 'mallam_results.xlsx'.")
 
 if __name__ == "__main__":
     main()
