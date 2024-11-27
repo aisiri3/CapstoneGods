@@ -12,5 +12,4 @@ accelerate
 matplotlib==3.8.4
 scipy==1.11.4
 librosa==0.8.0
-torch==2.1.0+cu121 --index-url https://download.pytorch.org/whl/cu121
 
