@@ -33,8 +33,10 @@ async function sendMessage() {
         // // display loading
         displayMessage("Loading response...", "loadingMessage", conversationBox);
 
-        // // play filler once
-        // playVideo(filler_path, false);
+        // play filler once if it's a question
+        if (userMessage.trim().endsWith("?")) {
+            playVideo(filler_path, false);
+        }
 
         // send to server and get response
         const data = await fetch('/speak', {

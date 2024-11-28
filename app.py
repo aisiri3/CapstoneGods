@@ -5,7 +5,6 @@ import torch
 import os
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 from transformers.utils import logging
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 from Coqui_English_python_workflow import init_TTS_model, TTS_workflow
 from lipsync_generation import generate_lipsync_wav2lip
@@ -13,9 +12,7 @@ from textToText_english_workflow import login_huggingface, get_llama_response
 
 app = Flask(__name__)
 
-# Ensure PyTorch doesn't pre-allocate all GPU memory
 torch.cuda.empty_cache()
-# torch.cuda.set_per_process_memory_fraction(0.8)  # Reserve 80% of GPU memory
 torch.cuda.memory.max_split_size_mb = 256
 
 # Disable tqdm output to resolve the handle error
@@ -55,9 +52,6 @@ def get_llama_pipeline():
 tts_model = init_TTS_model()
 tts_model.to("cpu")
 
-print(torch.cuda.memory_allocated())  # Print allocated memory
-print(torch.cuda.memory_cached())  # Print cached memory
-
 login_huggingface("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")
 llama_pipeline = get_llama_pipeline()
 
@@ -89,10 +83,6 @@ def speak():
     # to keep the answers short (for now)
     input_text = input_text + " Keep your answer short and precise."
     print("Manipulated user input: ", input_text)
-    
-    # copy the input text as output
-    # TODO: replace with actual response from TTT model
-    # response_text = input_text
     
    # Ensure the model is initialized before processing
     if llama_pipeline is None:
