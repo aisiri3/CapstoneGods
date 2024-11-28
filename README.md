@@ -15,7 +15,7 @@ You can view some demo videos of our POC on our [YouTube playlist](https://youtu
 
 ## Instructions to run the code
 ### 1. Creating a virtual environment
-To run the UI, you need to create a virtual environment with specifically [**Python 3.9.2**](https://www.python.org/downloads/release/python-392/) and activate it. To run the UI, create a virtual environment using Python 3.9.2. Ensure Python 3.9.2 is installed on your machine. If not, install it via:
+To run the UI, you need to create a virtual environment with specifically [**Python 3.9.2**](https://www.python.org/downloads/release/python-392/) and activate it. Ensure Python 3.9.2 is installed on your machine. If not, download it from the official website or install it via:
 
 - MacOS:
     ```
@@ -27,7 +27,7 @@ To run the UI, you need to create a virtual environment with specifically [**Pyt
     choco install python --version=3.9.2
     ```
 
-Navigate to the project directory: ``` cd [folder path]```, and run the following commands:
+Navigate to the project directory: ``` cd [folder path]```, and run the following commands (re-activate venv2 for every session):
 - MacOS:
     ```
     python3.9 -m venv venv2
@@ -57,7 +57,7 @@ FFmpeg is required for Wav2Lip. Install it as follows:
     ```
     brew install ffmpeg
     ```
-- Windows: Download it directly from [FFmpeg's website](https://www.ffmpeg.org/download.html) and ensure its path is added to the system's environment variables.
+- Windows: Download the .exe file directly from [FFmpeg's website](https://www.ffmpeg.org/download.html), or for simpler installation, source it from other online resources. Ensure its path is added to the system's environment variables.
 
 ### 3. Installation of other dependencies
 Install all other required dependencies listed in *requirements.txt*.
