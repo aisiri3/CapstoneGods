@@ -2,6 +2,7 @@
 
 # dependencies
 /backend/venv
+/backend/Llama_TTT_Output
 /node_modules
 /.pnp
 .pnp.*

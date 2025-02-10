@@ -1,4 +1,6 @@
 sounddevice
 spacy==3.5.3
-flask-cors
 TTS
+numpy==1.23.0
+accelerate
+flask-restful
