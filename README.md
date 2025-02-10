@@ -22,7 +22,7 @@ To run the backend server:
 python app.py 
 ```
 
-On the frontend, make sure Node.js, Next.js & Tailwind CSS is installed on your machine;
+On the frontend, make sure Node.js (v23.7.0), Next.js & Tailwind CSS is installed on your machine;
 
 To run the UI, open a separate terminal window and run:
 ```

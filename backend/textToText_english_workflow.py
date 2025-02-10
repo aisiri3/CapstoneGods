@@ -65,7 +65,8 @@ def get_llama_pipeline():
                 # max_memory={0: "12GB", "cpu": "4GB"},
                 # max_split_size_mb=256  # Set split size here
             )
-            model.to("cuda")
+            model.to(torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+
 
             tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
             llama_pipeline = pipeline(

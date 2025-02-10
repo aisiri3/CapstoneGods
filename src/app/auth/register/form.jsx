@@ -74,13 +74,13 @@ export function RegisterForm() {
   
 
 export function RegisterButton() {
-//   const { pending } = useFormStatus();
+  const { pending } = useFormStatus();
 
-//   return (
-//     <Button type="submit" className="mt-2 w-full" ariaDisabled={pending}>
-//       {pending ? 'Submitting...' : 'Register'}
-//     </Button>
-//   );
+  return (
+    <Button type="submit" className="mt-2 w-full" ariaDisabled={pending}>
+      {pending ? 'Submitting...' : 'Register'}
+    </Button>
+  );
 
     const router = useRouter();
     const handleRegister = (event) => {

@@ -14,7 +14,9 @@
 
 body {
   font-family: Verdana, Geneva, Tahoma, sans-serif, sans-serif;
-  background-color: #ffffff;
+    /* TODO: change this/everything to a brighter color for bright mode */
+  background-color: #0a0a0a;
+  /* background-image: linear-gradient(to right, 0a0a0a, rgb(159, 117, 179)); */
   color: #171717;
   overflow: hidden;
 }
@@ -111,13 +113,7 @@ a {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
+  }Should
   body {
     @apply bg-background text-foreground;
   }

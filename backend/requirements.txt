@@ -1,6 +1,10 @@
 sounddevice
 spacy==3.5.3
-TTS
+TTS==0.22.0
 numpy==1.23.0
 accelerate
+# torch, torchaudio version that is compatible with device's CUDA version
+flask
 flask-restful
+accelerate
+transformers
