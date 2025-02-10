@@ -12,36 +12,18 @@ import soundfile as sf
 print(f"Import time: {time.time() - start_time:.2f} seconds")
 
 
+## TODO: Move the model offline (use config file directly)
 # Initialise the TTS with the target model name:
 def init_TTS_model():
-    # We will be using the XTTS version 2 framework for English Text to Speech:
-    # We will be using the multi speaker, multi lingual version because:
-    #   1. Voice cloning - Can specify a speaker reference with a short audio sample of the target speaker's voice for voice cloning. 
-    #   2. Multi lingual capability - Can set the language parameter (eg. "en" for english) to generate speech in multiple languages. 
-
-    # Get the specified device (CPU or GPU):
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-    # Use the XTTS version 2 model:
     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2") # For now, we remove the gpu=True parameter because we are running on CPU
-
-    # Move the TTS model to the specified device:
     tts.to(device)
-
 
     return tts
 
 
 # Define the TTS workflow where we convert the text (received from the Text to text model) to speech:
 def TTS_workflow(tts, input_text, speaker_path, output_path):
-    # Parameters:
-    #   1. tts - The TTS model (initialised with init_TTS_model() function)
-    #   2. input_text - The text to be converted
-    #   3. speaker_path - Path to the speaker reference .wav file
-    #   4. output_path - Path to save the generated audio .wav file
-
-    # Save the input_text to a file (if we are planning to integrate with a database) - appending to file so stores history of input text:
     with open("conversation_input_text.txt", "a", encoding="utf-8") as input_file:
         input_file.write(input_text + "\n")
 

@@ -1,22 +1,34 @@
 # CapstoneGods
-To run the UI, create a virtual environment with Python 3.9 and activate it:
+Go to the folder's directory.
+First set up the backend: create a virtual environment with Python 3.9 and activate it:
 ```
-python3.9 -m venv venv2
-source venv2/bin/activate
+cd backend
+python3.9 -m venv venv
+
+# for MacOS
+source venv/bin/activate
+
+# for Windows
+venv2/Scripts/activate
 ```
 
-Go to the capstone folder through the terminal, and install the required dependencies:
+In the virtual environment, install required dependencies:
 ```
 pip install -r requirements.txt
 ```
 
-Then run the UI on a local server with the command:
+To run the backend server:
+``` 
+python app.py 
 ```
-python app.py
+
+To run the UI, open a separate terminal window and run:
+```
+npm run dev
 ```
 
 The UI should be running on
 ```
-http://127.0.0.1:5000/
+localhost:3000/
 ```
 

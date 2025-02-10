@@ -1,0 +1,169 @@
+/* Sidebar Container */
+.sidebar-container {
+  display: flex;
+  position: relative;
+}
+
+/* Sidebar */
+.sidebar {
+  height: 100vh;
+  background-color: rgba(49, 49, 55, 0.88);
+  color: white;
+  position: fixed;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  z-index: 10;
+  overflow: hidden;
+  transition: width 0.3s ease-in-out;
+}
+
+.sidebar.expanded {
+  width: 250px;
+  /* width: 17vw */
+}
+
+.sidebar.collapsed {
+  width: 70px;
+  /* width: 5vw */
+}
+
+/* Customize Avatar Header */
+.customize-avatar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 15px;
+  font-size: 15px;
+  font-weight: bold;
+  color: white;
+  border-bottom: 0.5px solid #7b7b7b;
+  margin-top: 12px;
+}
+
+.customize-avatar-header .header-icon {
+  color: white;
+}
+
+/* Expand Button */
+.expand-button {
+  position: absolute;
+  top: 15px;
+  right: 10px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: white;
+  /* transition: all 0.3s ease-in-out; */
+}
+
+.expand-button:hover {
+  background-color: #00000045;
+}
+
+/* Sidebar Items */
+.sidebar-items {
+  margin-left: 10px;
+}
+
+/* Adjust margin-top based on sidebar state */
+.sidebar.collapsed .sidebar-items {
+  margin-top: 70px;
+}
+
+.sidebar.expanded .sidebar-items {
+  margin-top: 8px;
+}
+
+.sidebar-icon span {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.sidebar-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  cursor: pointer;
+  /* transition: background-color 0.3s ease-in-out; */
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.sidebar-icon:hover,
+.sidebar-icon.active {
+  background-color: #200a5058;
+  border-radius: 5px;
+}
+
+.chevron-icon {
+  margin-left: auto;
+}
+
+/* Submenu */
+.submenu {
+  margin-left: 55px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.submenu-item {
+  padding: 7px;
+  margin-right: 50px;
+  cursor: pointer;
+  font-size: 13px;
+  /* transition: background-color 0.3s ease-in-out; */
+  border-radius: 5px;
+}
+
+.submenu-item:hover {
+  font-weight: bold;
+  color: rgb(183, 123, 235);
+}
+
+/* Settings Section */
+.settings-item {
+  padding: 10px;
+  position: absolute;
+  bottom: 80px;
+  width: 100%;
+}
+
+.user-section {
+  padding: 10px;
+  position: absolute;
+  bottom: 5px;
+  width: 100%;
+  border-top: 0.2px solid #7b7b7b;
+}
+
+/* User Info (Only visible when expanded) */
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.username {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.user-email {
+  font-size: 12px !important;
+  color: #d3d3d390;
+}
+
+.tooltip {
+  background-color: rgba(135, 135, 135, 0.3);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
