@@ -81,7 +81,7 @@ export function RegisterForm() {
   return (
       <form onSubmit={handleSubmit}>
           <div className="flex flex-col gap-2">
-              {error && <p className="text-red-500">{error}</p>}
+              {error && <p className="text-red-700">{error}</p>}
 
               <div>
                   <Label htmlFor="name">Username</Label>
@@ -113,16 +113,4 @@ export function RegisterButton() {
       {pending ? 'Submitting...' : 'Register'}
     </Button>
   );
-
-    const router = useRouter();
-    const handleRegister = (event) => {
-        event.preventDefault(); // Prevent form submission for now
-        router.push("/auth/signin"); // Navigate to the signin page
-    };
-
-    return (
-        <Button type="submit" className="mt-8 w-full" onClick={handleRegister}>
-        Register
-        </Button>
-    );
 }

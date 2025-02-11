@@ -4,23 +4,16 @@
 from flask import Flask, request, jsonify
 from flask_restful import Api, Resource
 from flask_mysqldb import MySQL
-
-import subprocess
-import uuid
 import bcrypt
 
 from Offline_Coqui_English_python_workflowCoqui_English_python_workflow import init_TTS_model, TTS_workflow, playback_output_speech
+from db.config import init_db
 
 app = Flask(__name__)
 api = Api(app)
 
 # MySQL configurations
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root' 
-app.config['MYSQL_PASSWORD'] = 'Capstone.12345'
-app.config['MYSQL_DB'] = 'capstoneDB'
-
-mysql = MySQL(app)
+mysql = init_db(app)
 
 # Disable tqdm output to resolve the handle error
 logging.disable_progress_bar()

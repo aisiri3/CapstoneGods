@@ -63,7 +63,7 @@ export function SignInForm() {
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.error || "Login failed");
+        throw new Error(result.error || "Wrong email or password, please try again");
       }
 
       console.log(result.message);
@@ -76,7 +76,7 @@ export function SignInForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {error && <p className="text-red-500">{error}</p>}  {/* Show error messages */}
+      {error && <p className="text-red-700">{error}</p>}  {/* Show error messages */}
 
       <div>
         <Label htmlFor="email">Email</Label>
