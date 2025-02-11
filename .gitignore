@@ -4,6 +4,7 @@
 /backend/venv
 /backend/Llama_TTT_Output
 /backend/__pycache__
+backend/db/__pycache__
 /.next
 /node_modules
 /.pnp
@@ -48,4 +49,7 @@ src/app/temp
 /backend/coqui-model
 
 # outputs
-/backend/outputs/user_output.wav
+backend/outputs/user_output.wav
+
+# unnecessary stuff
+backend/conversation_input_text.txt
