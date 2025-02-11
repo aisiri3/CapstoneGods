@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useFormState, useFormStatus } from 'react-dom';
 import "@/styles/Auth.css";
 // import { signup } from '@/app/auth/01-auth';
@@ -43,35 +44,66 @@ function Button({ children, type = 'button', className, ariaDisabled, onClick })
 }
 
 export function RegisterForm() {
-    const handleSubmit = (event) => {
-      event.preventDefault(); // Prevent page refresh
-      console.log("Form submitted (no backend yet)");
-    };
-  
-    return (
+  const router = useRouter();
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (event) => {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      const data = {
+          username: formData.get('name'),
+          email: formData.get('email'),
+          password: formData.get('password'),
+      };
+
+      try {
+          const response = await fetch('/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+              setError(result.error);
+              return;
+          }
+
+          console.log(result.message);
+          router.push("/auth/signin");  // Redirect to login page
+      } catch (error) {
+          console.error("Unexpected error:", error);
+          setError("Something went wrong. Please try again.");
+      }
+  };
+
+  return (
       <form onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-2">
-          <div>
-            <Label htmlFor="name">Username</Label>
-            <Input id="name" name="name" placeholder="John Doe" />
+          <div className="flex flex-col gap-2">
+              {error && <p className="text-red-500">{error}</p>}
+
+              <div>
+                  <Label htmlFor="name">Username</Label>
+                  <Input id="name" name="name" placeholder="John Doe" />
+              </div>
+
+              <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" name="email" placeholder="john@example.com" />
+              </div>
+
+              <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" name="password" type="password" />
+              </div>
+
+              <RegisterButton />
           </div>
-          
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" placeholder="john@example.com" />
-          </div>
-          
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" />
-          </div>
-  
-          <RegisterButton />
-        </div>
       </form>
-    );
-  }
-  
+  );
+}
+
 
 export function RegisterButton() {
   const { pending } = useFormStatus();

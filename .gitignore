@@ -46,3 +46,6 @@ src/app/temp
 
 # model files (too large)
 /backend/coqui-model
+
+# outputs
+/backend/outputs/user_output.wav

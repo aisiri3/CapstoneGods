@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import "@/styles/Auth.css";
 
 // Reuse the Label, Input, and Button components from the register form
@@ -38,26 +39,58 @@ function Button({ children, type = 'button', className, ariaDisabled, onClick })
 }
 
 export function SignInForm() {
-  const handleSubmit = (event) => {
-    event.preventDefault(); // Prevent page refresh
-    console.log("Sign In form submitted (no backend yet)");
+  const router = useRouter();
+  const [error, setError] = useState(null);  // Store error messages
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError(null);  // Reset error
+
+    const formData = new FormData(event.target);
+    const data = {
+      email: formData.get('email'),
+      password: formData.get('password'),
+    };
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Login failed");
+      }
+
+      console.log(result.message);
+      router.push("/main");  // Redirect on success
+    } catch (err) {
+      setError(err.message);
+      console.error(err.message);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="flex flex-col gap-2">
-        <div>
-          <Label htmlFor="email">Username / Email</Label>
-          <Input id="email" name="email" placeholder="john@example.com" />
-        </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {error && <p className="text-red-500">{error}</p>}  {/* Show error messages */}
 
-        <div>
-          <Label htmlFor="password">Password</Label>
-          <Input id="password" name="password" type="password" />
-        </div>
-
-        <SignInButton />
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" placeholder="john@example.com" required />
       </div>
+
+      <div>
+        <Label htmlFor="password">Password</Label>
+        <Input id="password" name="password" type="password" required />
+      </div>
+
+      <Button type="submit" className="mt-8 w-full">
+        Sign In
+      </Button>
     </form>
   );
 }
