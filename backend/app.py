@@ -150,7 +150,7 @@ class Login(Resource):
 
         # Fetch user from database
         cur = mysql.connection.cursor()
-        cur.execute("SELECT * FROM Users WHERE Email = %s", (email,))
+        cur.execute("SELECT UserID, Username, Email, Password FROM Users WHERE Email = %s", (email,))
         user = cur.fetchone()
         cur.close()
 
@@ -158,11 +158,19 @@ class Login(Resource):
             return {"error": "User not found"}, 404
 
         # Verify password using bcrypt
-        stored_hashed_password = user[3]  # Assuming password is the 4th column
+        stored_hashed_password = user[3]
         if not bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password.encode('utf-8')):
             return {"error": "Invalid password"}, 401
 
-        return {"message": "Login successful"}, 200
+        # Return user info (excluding password)
+        return {
+            "message": "Login successful",
+            "user": {
+                "user_id": user[0],
+                "username": user[1],
+                "email": user[2]
+            }
+        }, 200
 
 
 # Register resources
