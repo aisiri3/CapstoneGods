@@ -6,7 +6,7 @@ from flask_restful import Api, Resource
 from flask_mysqldb import MySQL
 import bcrypt
 
-from Offline_Coqui_English_python_workflowCoqui_English_python_workflow import init_TTS_model, TTS_workflow, playback_output_speech
+from Offline_Coqui_English_python_workflow import init_TTS_model, TTS_workflow, playback_output_speech
 from db.config import init_db
 
 app = Flask(__name__)
@@ -170,6 +170,7 @@ api.add_resource(Speak, "/api/speak")
 api.add_resource(PlayAudio, "/api/play_audio")
 api.add_resource(Register, "/api/register")
 api.add_resource(Login, "/api/login")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8888, debug=True, use_reloader=False)

@@ -41,6 +41,7 @@ function Button({ children, type = 'button', className, ariaDisabled, onClick })
 export function SignInForm() {
   const router = useRouter();
   const [error, setError] = useState(null);  // Store error messages
+  const [user, setUser] = useState(null);  // Store user info
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -53,6 +54,7 @@ export function SignInForm() {
     };
 
     try {
+      // Send login data to the server
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
@@ -67,6 +69,11 @@ export function SignInForm() {
       }
 
       console.log(result.message);
+
+      // Store user info in local storage.
+      localStorage.setItem("user", JSON.stringify(result.user));
+      setUser(result.user);
+
       router.push("/main");  // Redirect on success
     } catch (err) {
       setError(err.message);

@@ -1,3 +1,4 @@
+// forward login request to backend
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         try {

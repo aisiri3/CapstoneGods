@@ -4,6 +4,9 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+// use cards from auth pages
+import "@/styles/Auth.css";
+import "@/styles/Settings.css";
 
 export default function Settings() {
   const router = useRouter();
@@ -17,26 +20,42 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="settings-container">
+
       {/* Back button */}
-      <div className="self-start mb-8">
+      <div className="back-button">
         <button
           onClick={handleBack}
-          className="mt-6 ml-6 flex items-center text-white hover:text-gray-500"
+          className="flex items-center text-white hover:text-gray-500"
         >
           <ArrowLeft size={40} className="mr-2" />
           <span>Back to Main Page</span>
         </button>
       </div>
 
-      <h1 className="text-4xl">Settings (to add)</h1>
+      {/* Logo */}
+      <div className="logo"></div>
 
-      {/* Developer Tools button */}
-      <Link href="/developer-tools">
-        <button className="mt-8 bg-purple-800 hover:bg-purple-900 text-white font-bold py-2 px-4 rounded">
-          Open Developer Tools
-        </button>
-      </Link>
+      {/* Left side */}
+      <div className='split left'>
+        <div className='left-form'>
+          Information
+          {/* Developer Tools button */}
+          <Link href="/developer-tools">
+            <button className="mt-20 bg-violet-800 hover:bg-violet-900 text-white font-bold py-2 px-4 rounded">
+              Open Developer Mode
+            </button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Right side */}
+      <div className='split right'>
+        <div className='right-form'>
+          User Settings
+        </div>
+      </div>
+
     </div>
   );
 }
