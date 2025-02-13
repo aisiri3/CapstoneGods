@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import { React, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -10,9 +10,17 @@ import "@/styles/Settings.css";
 
 export default function Settings() {
   const router = useRouter();
+  const [user, setUser] = useState(null); // Store user data
+
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) {
+      setUser(storedUser);
+    }
+  }, []);
 
   const handleBack = () => {
-    if (window.history.length > 1) {
+    if (window.history.length > 1 && typeof window !== "undefined") {
       router.back(); // Go back if there is history
     } else {
       router.push('/'); // Redirect to home if no history
@@ -39,10 +47,21 @@ export default function Settings() {
       {/* Left side */}
       <div className='split left'>
         <div className='left-form'>
-          Information
+          <div className="font-bold form-heading">Profile Information</div>
+          {/* need to check whether user is null! */}
+          {user ? (
+            <>
+              <div className="mt-8 text-white font-bold">Username:</div>
+              <div className="text-gray-400">{user.username}</div>
+              <div className="mt-8 text-white font-bold">Email:</div>
+              <div className="text-gray-400">{user.email}</div>
+            </>
+          ) : (
+            <div className="mt-4 text-gray-300">Loading user data...</div>
+          )}
           {/* Developer Tools button */}
           <Link href="/developer-tools">
-            <button className="mt-20 bg-violet-800 hover:bg-violet-900 text-white font-bold py-2 px-4 rounded">
+            <button className="mt-20 bg-violet-800 hover:bg-violet-900 text-white py-2 px-4 rounded">
               Open Developer Mode
             </button>
           </Link>
@@ -52,7 +71,7 @@ export default function Settings() {
       {/* Right side */}
       <div className='split right'>
         <div className='right-form'>
-          User Settings
+          <div className="font-bold form-heading">User Settings</div>
         </div>
       </div>
 

@@ -3,10 +3,16 @@ spacy==3.5.3
 TTS==0.22.0
 numpy==1.23.0
 accelerate
-# torch, torchaudio version that is compatible with device's CUDA version
 flask
 flask-restful
 flask-mysqldb
-accelerate
 transformers
 bcrypt
+huggingface-hub
+mysql-connector-python
+requests
+pandas 
+openpyxl 
+sentence-transformers 
+
+

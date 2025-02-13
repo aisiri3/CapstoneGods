@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import "@/styles/SideBar.css";
@@ -11,8 +11,20 @@ import { AlignLeft, AlignRight, ChevronDown, Settings, UserPen } from "lucide-re
 export default function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState({});
+  const [user, setUser] = useState(null); // Store user data
   // TODO: persona/gender logic
   const [selectedPersona, setSelectedPersona] = useState("casual-female");
+
+   // fetch user info for display (from localStorage)
+   useEffect(() => {
+    // Retrieve user info from localStorage
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) {
+      setUser(storedUser);
+    }
+  }, []);
+
+console.log("GOT USER: ", user);
 
   const toggleSidebar = () => {
     if (isExpanded) {
@@ -21,6 +33,7 @@ export default function Sidebar() {
     setIsExpanded(!isExpanded);
   };
 
+  // Function to handle submenu toggling
   const handleSubmenuToggle = (item) => {
     if (!isExpanded) {
       setIsExpanded(true);
@@ -38,6 +51,7 @@ export default function Sidebar() {
     }
   };
 
+  // Submenus items
   const menuItems = [
     {
       id: "gender",
@@ -49,7 +63,7 @@ export default function Sidebar() {
       id: "persona",
       label: "Select Persona",
       icon: "/icons/personas-icon.png",
-      submenu: ["Casual", "Workplace"],
+      submenu: ["Casual", "Professional"],
     },
     {
       id: "language",
@@ -143,7 +157,8 @@ export default function Sidebar() {
           </TooltipProvider>
         </div>
 
-        {/* TODO: Replace with actual user info */}
+        {/* Display fetched user info */}
+        {/* TODO: display fetched info */}
         <div className="user-section">
           <div className="sidebar-icon">
             <Image
@@ -156,8 +171,8 @@ export default function Sidebar() {
             />
             {isExpanded && (
               <div className="user-info">
-                <span className="username">BahasaBuddy</span>
-                <span className="user-email">bahasabuddy@gmail.com</span>
+                <span className="username">{user.username || "User"}</span>
+                <span className="user-email">{user.email || "No Email"}</span>
               </div>
             )}
           </div>

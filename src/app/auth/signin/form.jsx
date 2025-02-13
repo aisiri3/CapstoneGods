@@ -77,7 +77,7 @@ export function SignInForm() {
       router.push("/main");  // Redirect on success
     } catch (err) {
       setError(err.message);
-      console.error(err.message);
+      // console.error(err.message);
     }
   };
 

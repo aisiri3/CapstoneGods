@@ -4,6 +4,7 @@
     flex-direction: column;
     height: 100vh; /* Full screen height */
     position: relative;
+    font-size: 1rem;
 }
 
 /* Back button styling */
@@ -64,3 +65,8 @@
 .settings-form > * {
     width: 100%; /* Ensure children fill the form */
 }
+
+.form-heading {
+    font-size: 1.2rem;
+}
+

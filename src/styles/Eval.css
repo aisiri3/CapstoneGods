@@ -1,0 +1,106 @@
+.main-form {
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(49, 49, 55, 0.805);
+  border-radius: 20px;
+  width: 80vw;
+  height: 80vh;
+  padding: 2rem 3rem;
+  overflow-y: auto; /* Enables vertical scrolling */
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  top: 52.5%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+
+/* General styling for input and textarea fields */
+.input-field, textarea.input-field {
+  font-family: Arial, sans-serif; 
+  padding: 8px 12px;
+  border-radius: 4px;
+  width: 100%;  /* Ensure the fields take up the full width of their container */
+  box-sizing: border-box;
+}
+
+
+.response-time-input,
+.similarity-score-input {
+  width: 30%; /* Adjust as needed */
+  /* You may want to use 'flex' styling here if they are in a flex container */
+}
+
+.overview-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background-color: rgb(23, 11, 40);  
+  width: 40%;
+  padding: 1vw;
+  border-radius: 8px;
+}
+
+.large-value {
+  font-size: 3vw;
+}
+
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgb(14, 6, 26);
+  /* background-color: rgb(23, 11, 40); */
+  width: 60%;
+  padding: 1vw;
+  border-radius: 8px;
+}
+
+.sections-header {
+  font-size: 1rem;
+  color: white;
+}
+
+.form-header {
+  font-size: 1.2rem;
+  color: white;
+}
+
+/* Form section styling */
+.form-section {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+}
+
+/* Styling for textareas */
+textarea.input-field {
+  resize: vertical;
+  min-height: 100px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.custom-table {
+  width: 100%;
+  margin-top: 1rem;
+  border-collapse: collapse; /* Ensures clean border merging */
+  font-size: 14px; /* Equivalent to Tailwind's text-sm */
+}
+
+.custom-table th,
+.custom-table td {
+  border: 1px solid gray; /* Equivalent to Tailwind's border-gray-500 */
+  padding: 8px;
+  text-align: left;
+  font-size: 12px; /* Equivalent to Tailwind's text-xs */
+}
+
+.custom-table thead {
+  background-color: #3c1b5980; /* Equivalent to Tailwind's bg-gray-800 */
+  color: white;
+}
