@@ -1,0 +1,80 @@
+
+/* Flex Row Container for Buttons */
+.flex-row-container {
+  display: flex;
+  flex-direction: row; /* Align buttons in a row */
+  justify-content: space-between; /* Add space between buttons */
+  width: auto; /* Ensure the container doesn’t stretch to full width unnecessarily */
+}
+/* General styling for input and textarea fields */
+.input-field, textarea.input-field {
+  font-family: Arial, sans-serif; 
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;  /* Ensure the fields take up the full width of their container */
+  box-sizing: border-box;
+}
+
+/* Specific styling for different fields */
+.prompt-input,
+.persona-input,
+.sample-response-input,
+.actual-response-input {
+  width: 100%; /* Ensure all inputs have full width */
+}
+
+.response-time-input,
+.similarity-score-input {
+  width: 30%; /* Adjust as needed */
+  /* You may want to use 'flex' styling here if they are in a flex container */
+}
+
+/* Form section styling */
+.form-section {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Styling for textareas */
+textarea.input-field {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Button styling */
+.button {
+  background-color: #007BFF;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  padding-left: 16px;
+  display: inline-flex; /* Make sure buttons behave as inline-flex */
+  align-items: center; /* Vertically align the content */
+  justify-content: center; /* Ensure the content is centered horizontally */
+}
+
+/* Add right margin for space between buttons */
+.button + .button {
+  margin-left: 16px; /* This will add space between consecutive buttons */
+  padding-left: 16px;
+}
+
+.button:hover {
+  background-color: #0056b3;
+}
+
+/* Flex Row Container for Buttons */
+.flex-row-container {
+  display: flex;
+  padding-left: 16px;
+  flex-direction: row; /* Align buttons in a row */
+  justify-content: flex-start; /* Align buttons to the left, you can change this if you want them centered */
+  width: auto; /* Ensure the container doesn’t stretch to full width unnecessarily */
+}

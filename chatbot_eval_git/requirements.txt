@@ -1,0 +1,13 @@
+torch
+transformers
+huggingface-hub
+numpy
+Flask
+Flask-CORS
+mysql-connector-python
+requests
+pandas 
+openpyxl 
+sentence-transformers 
+accelerate
+
