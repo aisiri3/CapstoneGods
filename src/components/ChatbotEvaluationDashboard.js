@@ -3,18 +3,22 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from "xlsx";
 import { Scatter } from "react-chartjs-2";
+import { Info } from "lucide-react";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { v4 as uuidv4 } from 'uuid';
+
 import {
   Chart as ChartJS,
   LinearScale, // Import LinearScale
   PointElement,
   LineElement,
-  Tooltip,
+  Tooltip as ChartTooltip,
   Legend,
 } from 'chart.js';
 import "@/styles/Eval.css";
 
 // Register the required components
-ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend);
+ChartJS.register(LinearScale, PointElement, LineElement, ChartTooltip, Legend);
 
 export default function ChatbotEvaluationDashboard() {
   const [entries, setEntries] = useState([]);
@@ -86,6 +90,7 @@ export default function ChatbotEvaluationDashboard() {
         data: entries.map((entry, index) => ({
           x: index,
           y: entry.similarityScore,
+          key: `similarity-${index}`,
         })),
         backgroundColor: "rgba(75, 192, 192, 1)",
         borderColor: "rgba(75, 192, 192, 0.2)",
@@ -98,6 +103,8 @@ export default function ChatbotEvaluationDashboard() {
         data: entries.map((entry, index) => ({
           x: index,
           y: entry.responseTime,
+          key: `response-time-${index}`,
+
         })),
         backgroundColor: "rgba(255, 99, 132, 1)",
         borderColor: "rgba(255, 99, 132, 0.2)",
@@ -200,7 +207,7 @@ export default function ChatbotEvaluationDashboard() {
 
   const handleStartEvaluation = async () => {
     try {
-      const response = await fetch('/api/evaluation', {
+      const response = await fetch('/api/start-evaluation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -251,6 +258,7 @@ export default function ChatbotEvaluationDashboard() {
       }));
 
       setEntries(newEntries);
+      console.log("New entries:", newEntries);
 
       // Send the entries to the backend to be saved in the database
       newEntries.forEach(async (entry) => {
@@ -281,6 +289,7 @@ export default function ChatbotEvaluationDashboard() {
   return (
     <div>
       <div className="main-form mx-auto p-4">
+        {/* <h1 className="text-2xl text-center mb-4">Developer Tools</h1> */}
 
         {/* Container for Overview and Chart Sections */}
         <div className="flex flex-row space-x-4 mb-6">
@@ -291,14 +300,14 @@ export default function ChatbotEvaluationDashboard() {
 
             {/* Similarity Score */}
             <div className="mt-12 text-center">
-              <div className="text-5xl font-bold text-rose-400 large-value">{averageSimilarity.toFixed(2)}</div>
-              <div className="mt-3 text-sm text-rose-400">Average Similarity Score</div>
+              <div className="text-5xl font-bold text-cyan-400 large-value">{averageSimilarity.toFixed(2)}</div>
+              <div className="mt-3 text-sm text-cyan-400">Average Similarity Score</div>
             </div>
 
             {/* Response Time */}
             <div className="mt-12 text-center">
-              <div className="text-5xl font-bold text-cyan-400 large-value">{averageResponseTime.toFixed(2)} ms</div>
-              <div className="mt-3 text-sm text-cyan-400">Average Response Time</div>
+              <div className="text-5xl font-bold text-rose-400">{averageResponseTime.toFixed(2)} ms</div>
+              <div className="mt-3 text-sm text-rose-400">Average Response Time</div>
             </div>
           </div>
   
@@ -312,11 +321,27 @@ export default function ChatbotEvaluationDashboard() {
 
         {/* Just a horizontal line */}
         <hr></hr>
+
+        <h1 className="mt-4 text-xl font-bold mb-4 flex items-center">
+        Model Evaluation
+
+        <TooltipProvider delayDuration={70}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="ml-2 text-gray-300 cursor-pointer" size={18} />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Evaluates the responses based on <br></br>
+                similarity and response time.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+      </h1>
   
         {/* File Upload for Excel */}
-        <h1 className="mt-4 font-bold mb-4 form-header">Model Evaluation</h1>
         <div className="form-section mb-2">
-          <label className="form-label">Upload Dataset Excel File Here</label>
+          <label className="italic">Upload Dataset Excel File Here</label>
           <input
             type="file"
             accept=".xlsx, .xls"
@@ -365,7 +390,7 @@ export default function ChatbotEvaluationDashboard() {
           </button>
         </div>
 
-        <hr className='mt-10'></hr>
+        <hr className='mt-10 mb-4'></hr>
   
         {/* Display Evaluation Entries */}
         <h2 className="mt-4 text-xl font-bold mt-12 form-header">Evaluation Entries</h2>
@@ -376,17 +401,30 @@ export default function ChatbotEvaluationDashboard() {
               <th>Sample Response</th>
               <th>Actual Response</th>
               <th>Response Time (ms)</th>
-              <th>Similarity Score</th>
+              <th>
+                Similarity Score
+                <TooltipProvider delayDuration={70}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="ml-2 text-gray-300 cursor-pointer" size={18} />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Similarity score refers to the <br></br>
+                          bla bla bla bla bla...</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+              </th>
             </tr>
           </thead>
           <tbody>
             {entries.map((entry) => (
-              <tr key={entry.id}>
+              <tr key={entry.id || uuidv4()}>
                 <td>{entry.prompt}</td>
                 <td>{entry.sampleResponse}</td>
                 <td>{entry.actualResponse}</td>
-                <td>{entry.responseTime}</td>
-                <td>{entry.similarityScore}</td>
+                <td className='font-bold'>{entry.responseTime}</td>
+                <td className='font-bold'>{entry.similarityScore}</td>
               </tr>
             ))}
           </tbody>

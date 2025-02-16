@@ -38,13 +38,9 @@
   align-items: center;
   text-align: center;
   background-color: rgb(23, 11, 40);  
-  width: 40%;
+  width: 35%;
   padding: 1vw;
   border-radius: 8px;
-}
-
-.large-value {
-  font-size: 3vw;
 }
 
 .chart-section {
@@ -53,19 +49,19 @@
   align-items: center;
   background-color: rgb(14, 6, 26);
   /* background-color: rgb(23, 11, 40); */
-  width: 60%;
+  width: 65%;
   padding: 1vw;
   border-radius: 8px;
 }
 
 .sections-header {
   font-size: 1rem;
-  color: white;
 }
 
 .form-header {
   font-size: 1.2rem;
   color: white;
+  margin-top: auto;
 }
 
 /* Form section styling */

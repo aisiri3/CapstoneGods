@@ -14,16 +14,19 @@ export default async function handler(req, res) {
         }
     } else if (req.method === 'POST') {
         try {
-            const response = await fetch('http://localhost:8888/api/start-evaluation', {
+            const entryData = req.body;  // Get the entry data sent from frontend
+
+            const response = await fetch('http://localhost:8888/api/entries', {  // FIXED ENDPOINT
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                body: JSON.stringify(entryData),  // Send data to backend
             });
 
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.error || "Failed to start evaluation");
+                throw new Error(data.error || "Failed to add entry");
             }
 
             res.status(200).json(data);
