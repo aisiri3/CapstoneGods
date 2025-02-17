@@ -9,7 +9,7 @@ import sounddevice as sd
 import soundfile as sf
 
 # It is taking quite some time (about 6 seconds) to import the libraries (so the output becomes delayed) - currently running on CPU, should be faster on GPU:
-print(f"Import time: {time.time() - start_time:.2f} seconds")
+# print(f"Import time: {time.time() - start_time:.2f} seconds")
 
 
 ## TODO: Move the model offline (use config file directly)
@@ -51,32 +51,32 @@ def playback_output_speech(output_path):
     print("TTS completed!")
 
 
-# Call the functions if we are invoking this file directly: (to be checked when integrating everything):
-if __name__ == "__main__":
+# # Call the functions if we are invoking this file directly: (to be checked when integrating everything):
+# if __name__ == "__main__":
 
-    print("Hello World")
+#     print("Hello World")
 
-    # Press y ("Otherwise, I agree to the terms of the non-commercial CPML: https://coqui.ai/cpml") 
-    # -> First time it will take some time to download the TTS model locally but subsequent times will be faster because model is already downloaded
-    tts_model = init_TTS_model() 
+#     # Press y ("Otherwise, I agree to the terms of the non-commercial CPML: https://coqui.ai/cpml") 
+#     # -> First time it will take some time to download the TTS model locally but subsequent times will be faster because model is already downloaded
+#     tts_model = init_TTS_model() 
 
-    # Speaker reference:
-    # Currently, taken from business_ethics.wav file (3 min audio clip):
-    speaker_path = "inputs/business-ethics.wav"
+#     # Speaker reference:
+#     # Currently, taken from business_ethics.wav file (3 min audio clip):
+#     speaker_path = "inputs/business-ethics.wav"
 
-    # Define output path:
-    output_path = "outputs/user_output.wav"
+#     # Define output path:
+#     output_path = "outputs/user_output.wav"
 
-    # For testing purpose, user inputs a text and then the TTS model converts the user input to speech:
-    while True:
-        input_text = input("Enter text to convert to speech (or 'exit' to quit): ")
-        if input_text.lower() == 'exit':
-            break
-        # Run the TTS workflow:
-        TTS_workflow(tts_model, input_text, speaker_path, output_path)
+#     # For testing purpose, user inputs a text and then the TTS model converts the user input to speech:
+#     while True:
+#         input_text = input("Enter text to convert to speech (or 'exit' to quit): ")
+#         if input_text.lower() == 'exit':
+#             break
+#         # Run the TTS workflow:
+#         TTS_workflow(tts_model, input_text, speaker_path, output_path)
 
-        # Playback the generated speech immediately after conversion:
-        playback_output_speech(output_path)
+#         # Playback the generated speech immediately after conversion:
+#         playback_output_speech(output_path)
 
     
 

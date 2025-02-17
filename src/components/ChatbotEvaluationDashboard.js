@@ -121,7 +121,7 @@ export default function ChatbotEvaluationDashboard() {
       x: {
         title: {
           display: true,
-          text: "X-axis",
+          text: "Prompt Index",
           color: "rgba(75, 192, 192, 1)",  // light blue
         },
         ticks: {
@@ -179,6 +179,14 @@ export default function ChatbotEvaluationDashboard() {
 
   const handleAddEntry = async () => {
     try {
+      // Fetch existing entries
+      const existingResponse = await fetch('/api/evaluation');
+      if (!existingResponse.ok) {
+        throw new Error("Failed to fetch existing entries");
+      }
+      const existingEntries = await existingResponse.json();
+  
+      // Add new entry
       const response = await fetch('/api/evaluation', {
         method: 'POST',
         headers: {
@@ -186,13 +194,16 @@ export default function ChatbotEvaluationDashboard() {
         },
         body: JSON.stringify(newEntry),
       });
-
-      const data = await response.json();
+  
+      const newData = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Failed to add entry");
+        throw new Error(newData.message || "Failed to add entry");
       }
-
-      setEntries((prev) => [...prev, data]);
+  
+      // Update state with both existing and new entries
+      setEntries([...existingEntries, newData]);
+      
+      // Reset the form
       setNewEntry({
         prompt: "",
         sampleResponse: "",
@@ -200,40 +211,47 @@ export default function ChatbotEvaluationDashboard() {
         responseTime: 0,
         similarityScore: 0
       });
+  
     } catch (error) {
       console.error("Error adding entry:", error);
     }
   };
+  
 
   const handleStartEvaluation = async () => {
     try {
+      alert('Evaluation has started!');
+  
       const response = await fetch('/api/start-evaluation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-
-      const data = await response.json();
+  
       if (!response.ok) {
-        throw new Error(data.message || "Failed to start evaluation");
+        const errorText = await response.text(); // Get raw text response in case it's not JSON
+        throw new Error(`Failed to start evaluation: ${errorText}`);
       }
-
+  
+      const data = await response.json(); // Parse JSON after confirming it's valid
+      console.log("Evaluation Started:", data);
       alert('Evaluation complete!');
-
+  
       // Re-fetch entries to update the UI
       const updatedResponse = await fetch('/api/evaluation');
-      const updatedData = await updatedResponse.json();
       if (!updatedResponse.ok) {
-        throw new Error(updatedData.message || "Failed to fetch updated entries");
+        throw new Error("Failed to fetch updated entries");
       }
-
+  
+      const updatedData = await updatedResponse.json();
       setEntries(updatedData);
     } catch (error) {
       console.error("Error starting evaluation:", error);
       alert('There was an error starting the evaluation.');
     }
   };
+  
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -313,7 +331,7 @@ export default function ChatbotEvaluationDashboard() {
   
           {/* Chart */}
           <div className="w-1/2 p-4 chart-section">
-            <h1 className="mb-4 sections-header">Visitor Insights</h1>
+            <h1 className="mb-4 sections-header">Graph of Similarity Score and Response</h1>
             <Scatter data={chartData} options={chartOptions} />
           </div>
           

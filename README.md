@@ -34,3 +34,5 @@ The UI should be running on
 localhost:3000/
 ```
 
+Run in case got unicode issue
+''chcp 65001''

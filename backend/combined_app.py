@@ -6,12 +6,19 @@ import subprocess
 import bcrypt
 import time
 import torch
+import os
+
+print("imported till torch...")
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+print("from transformers")
 from sentence_transformers import SentenceTransformer, util
+print("from sentence_transformers ")
 
 from Coqui_English_python_workflow import init_TTS_model, TTS_workflow, playback_output_speech
-from llamaEvaluation import generate_response, calculate_similarity
+print("from Coqui_English_python_workflow ")
+
 from db.config import init_db
+print("from db.config ")
 
 app = Flask(__name__)
 api = Api(app)
@@ -24,23 +31,29 @@ tts_model = init_TTS_model()
 speaker_path = "inputs/business-ethics.wav"  # Speaker reference
 output_path = "outputs/user_output.wav"      # Output audio path
 
-print("Setting up llama...")
-device = 0 if torch.cuda.is_available() else -1
+# print("Setting up llama...")
+# device = 0 if torch.cuda.is_available() else -1
 
-# Load Llama model and tokenizer
-model_id = "meta-llama/Llama-2-7b-chat-hf"
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+# # Load Llama model and tokenizer
+# model_id = "meta-llama/Llama-2-7b-chat-hf"
+# tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-# Set up the Llama pipeline
-llama_pipeline = pipeline(
-    task="text-generation",
-    model=model_id,
-    torch_dtype=torch.float16,
-    device=device
-)
+# def get_llama_pipeline():
+#     # Set up the Llama pipeline
+#     llama_pipeline = pipeline(
+#         task="text-generation",
+#         model=model_id,
+#         torch_dtype=torch.float16,
+#         device=device
+#     )
+#     return llama_pipeline
 
-# Load the sentence transformer model for similarity calculation
-similarity_model = SentenceTransformer('all-MiniLM-L6-v2')
+# # Load the sentence transformer model for similarity calculation
+# similarity_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# print("going to llamaEvaluation ")
+# from llamaEvaluation import generate_response, calculate_similarity
+# print("from llamaEvaluation ")
 
 class Speak(Resource):
     def post(self):
@@ -188,45 +201,91 @@ class Entries(Resource):
             return {"error": str(e)}, 500
 
 
+# class StartEvaluation(Resource):
+#     def post(self):
+#         """Trigger evaluation using Llama model"""
+#         try:
+#             print("Starting evaluation...")
+
+#             # Fetch entries from the database
+#             cursor = mysql.connection.cursor()
+#             cursor.execute("SELECT * FROM evaluation_entries")
+#             # entries = cursor.fetchall()
+#             columns = [col[0] for col in cursor.description]
+#             entries = [dict(zip(columns, row)) for row in cursor.fetchall()]
+#             print("Number of entries fetched:", len(entries))
+
+#             for entry in entries:
+#                 prompt = entry['prompt']
+#                 sample_response = entry['sampleResponse']
+
+#                 # Generate response using Llama model
+#                 generated_response, response_time = generate_response(prompt)
+
+#                 # Calculate similarity score
+#                 similarity_score = calculate_similarity(sample_response, generated_response)
+
+#                 # Update database
+#                 cursor.execute("""
+#                     UPDATE evaluation_entries
+#                     SET actualResponse = %s, responseTime = %s, similarityScore = %s
+#                     WHERE id = %s
+#                 """, (generated_response, response_time, similarity_score, entry['id']))
+                
+#                 mysql.connection.commit()
+
+#             cursor.close()
+
+#             return {"message": "Evaluation completed successfully"}, 200
+
+#         except Exception as e:
+#             return {"error": str(e)}, 500
+
+
 class StartEvaluation(Resource):
     def post(self):
-        """Trigger evaluation using Llama model"""
+        print('Starting Python script...')
+        
         try:
-            print("Starting evaluation...")
+            # Get the path to the virtual environment's Python interpreter
+            venv_python = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                     'venv', 'Scripts', 'python.exe')
+            
+            # Set environment variables
+            db_config = {
+                'host': os.getenv('DB_HOST', 'localhost'),
+                'user': os.getenv('DB_USER', 'root'),
+                'password': os.getenv('DB_PASSWORD', 'cap123'),
+                'database': os.getenv('DB_NAME', 'chatbot_eval')
+            }
+            
+            env = os.environ.copy()
+            env.update({
+                'DB_HOST': db_config['host'],
+                'DB_USER': db_config['user'],
+                'DB_PASSWORD': db_config['password'],
+                'DB_NAME': db_config['database'],
+                'PYTHONPATH': os.path.dirname(os.path.abspath(__file__))
+            })
 
-            # Fetch entries from the database
-            cursor = mysql.connection.cursor()
-            cursor.execute("SELECT * FROM evaluation_entries")
-            # entries = cursor.fetchall()
-            columns = [col[0] for col in cursor.description]
-            entries = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            print("Number of entries fetched:", len(entries))
+            process = subprocess.Popen(
+                [venv_python, 'llamaEvaluation.py'], 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE, 
+                text=True,
+                env=env
+            )
+            output, error = process.communicate()
 
-            for entry in entries:
-                prompt = entry['prompt']
-                sample_response = entry['sampleResponse']
-
-                # Generate response using Llama model
-                generated_response, response_time = generate_response(prompt)
-
-                # Calculate similarity score
-                similarity_score = calculate_similarity(sample_response, generated_response)
-
-                # Update database
-                cursor.execute("""
-                    UPDATE evaluation_entries
-                    SET actualResponse = %s, responseTime = %s, similarityScore = %s
-                    WHERE id = %s
-                """, (generated_response, response_time, similarity_score, entry['id']))
-                
-                mysql.connection.commit()
-
-            cursor.close()
-
-            return {"message": "Evaluation completed successfully"}, 200
+            if process.returncode == 0:
+                print(f'Received data: {output}')
+                return jsonify({"message": "Evaluation completed successfully!", "data": output})
+            else:
+                print(f'stderr: {error}')
+                return jsonify({"error": "Evaluation failed", "details": error}), 500
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return jsonify({"error": "Server error", "details": str(e)}), 500
 
 
 # Register resources
