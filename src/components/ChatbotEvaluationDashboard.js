@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import * as XLSX from "xlsx";
 import { Scatter } from "react-chartjs-2";
 import { Info } from "lucide-react";
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip";
 import { v4 as uuidv4 } from 'uuid';
 
 import {
