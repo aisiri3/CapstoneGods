@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import Chat from "@/components/Chat";
 import Sidebar from "@/components/Sidebar";
 import "@/styles/MainPage.css";
@@ -27,6 +28,7 @@ export default function MainPage() {
 
         <div className="logo"></div>
 
+        {/* avatar + chatbox */}
         {/* avatar + chatbox */}
         <div className="main-container">
         {/* <div className="w-full overflow-x-auto bg-accent"> */}
