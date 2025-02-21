@@ -2,7 +2,6 @@
 
 import React, { useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Canvas } from '@react-three/fiber';
 import Chat from "@/components/Chat";
 import Sidebar from "@/components/Sidebar";
 import "@/styles/MainPage.css";
