@@ -14,7 +14,7 @@ print("from transformers")
 from sentence_transformers import SentenceTransformer, util
 print("from sentence_transformers ")
 
-from Coqui_English_python_workflow import init_TTS_model, TTS_workflow, playback_output_speech
+from workflows.Coqui_English_python_workflow import init_TTS_model, TTS_workflow, playback_output_speech
 print("from Coqui_English_python_workflow ")
 
 from db.config import init_db
@@ -73,11 +73,13 @@ class Speak(Resource):
             # TODO: CHANGE THIS TO A DATABASE TABLE
             with open("conversation_input_text.txt", "a", encoding="utf-8") as f:
                 f.write(input_text + "\n")
+                
+            response_text = input_text
 
             # Run TTS model
-            TTS_workflow(tts_model, input_text, speaker_path, output_path)
+            TTS_workflow(tts_model, response_text, speaker_path, output_path)
 
-            return {"response": input_text}, 200
+            return {"response": response_text}, 200
 
         except Exception as e:
             print(f"Exception: {e}")
@@ -199,47 +201,6 @@ class Entries(Resource):
 
         except Exception as e:
             return {"error": str(e)}, 500
-
-
-# class StartEvaluation(Resource):
-#     def post(self):
-#         """Trigger evaluation using Llama model"""
-#         try:
-#             print("Starting evaluation...")
-
-#             # Fetch entries from the database
-#             cursor = mysql.connection.cursor()
-#             cursor.execute("SELECT * FROM evaluation_entries")
-#             # entries = cursor.fetchall()
-#             columns = [col[0] for col in cursor.description]
-#             entries = [dict(zip(columns, row)) for row in cursor.fetchall()]
-#             print("Number of entries fetched:", len(entries))
-
-#             for entry in entries:
-#                 prompt = entry['prompt']
-#                 sample_response = entry['sampleResponse']
-
-#                 # Generate response using Llama model
-#                 generated_response, response_time = generate_response(prompt)
-
-#                 # Calculate similarity score
-#                 similarity_score = calculate_similarity(sample_response, generated_response)
-
-#                 # Update database
-#                 cursor.execute("""
-#                     UPDATE evaluation_entries
-#                     SET actualResponse = %s, responseTime = %s, similarityScore = %s
-#                     WHERE id = %s
-#                 """, (generated_response, response_time, similarity_score, entry['id']))
-                
-#                 mysql.connection.commit()
-
-#             cursor.close()
-
-#             return {"message": "Evaluation completed successfully"}, 200
-
-#         except Exception as e:
-#             return {"error": str(e)}, 500
 
 
 class StartEvaluation(Resource):
