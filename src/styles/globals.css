@@ -48,8 +48,8 @@ a {
 }
 
 .logo {
-  width: 220px;
-  height: 100px;
+  width: 400px;
+  height: 150px;
   background-image: url("/logo.png");
   background-size: contain;
   background-repeat: no-repeat;

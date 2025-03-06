@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     # os.makedirs(output_dir, exist_ok=True)
 
-    prompts = ["Your boss asks about your project progress. What do you say? Give me a concise sentence for an answer."]
+    prompts = ["Can you help me with my english speaking skills? Give me a short and concise sentence for an answer."]
 
     responses = {}
     print("in main !!!!!!!!!!!!!!!!!!!")

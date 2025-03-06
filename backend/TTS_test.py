@@ -19,11 +19,8 @@ def init_TTS_model(device="cpu"):
     tts.to(device)
     return tts
 
-
 # Define the TTS workflow where we convert the text (received from the Text to text model) to speech:
 def TTS_workflow(tts, input_text, speaker_path, output_path):
-    with open("conversation_input_text.txt", "a", encoding="utf-8") as input_file:
-        input_file.write(input_text + "\n")
 
     # Text to Speech conversion:
     tts.tts_to_file(
@@ -50,7 +47,7 @@ def playback_output_speech(output_path):
 
 
 # Call the functions if we are invoking this file directly: (to be checked when integrating everything):
-if __name__ == "__main__":
+if name == "main":
 
     print("Hello World")
 
@@ -76,8 +73,3 @@ if __name__ == "__main__":
 
         # Playback the generated speech immediately after conversion:
         playback_output_speech(output_path)
-
-    
-
-    
-    

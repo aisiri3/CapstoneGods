@@ -1,7 +1,6 @@
 sounddevice
-spacy==3.5.3
+spacy
 TTS==0.22.0
-numpy==1.23.0
 accelerate
 flask
 flask-restful
@@ -14,5 +13,5 @@ requests
 pandas 
 openpyxl 
 sentence-transformers 
-
+numpy
 
