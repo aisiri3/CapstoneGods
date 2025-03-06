@@ -3,7 +3,7 @@
 Go to the folder's directory, then 'cd backend' to go to the backend folder.
 First, we need to install [Rhubarb Lip-Sync](https://github.com/DanielSWolf/rhubarb-lip-sync/releases). Go to the link and download the correct zip file for your machine (e.g. if on Windows laptop, download Rhubarb-Lip-Sync-1.13.0-Windows.zip). 
 
-Unzip the file, then place the Rhubarb folder in the backend folder. Then, rename it from "Rhubarb-Lip-Sync-1.13.0-Windows" to simply "Rhubarb-Lip-Sync-1.13.0".
+Unzip the file, then place the Rhubarb folder in the ***backend/workflows*** folder. Make sure to place it in the right place. Then, rename it from "Rhubarb-Lip-Sync-1.13.0-Windows" to simply "Rhubarb-Lip-Sync-1.13.0".
 
 Create a virtual environment with Python 3.9 and activate it:
 ```
@@ -45,6 +45,37 @@ The UI should be running on
 ```
 localhost:3000/
 ```
+
+
+
+## Troubleshooting
+In the case that XTTS is not working as per normal, and you encounter this error:
+```
+Flask error: {
+    "error": "Weights only load failed. This file can still be loaded, to do so you have two options, \u001b[1mdo those steps only if you trust the source of the checkpoint\u001b[0m. \n\t(1) In PyTorch 2.6, we changed the default value of the weights_only argument in torch.load from False to True. 
+
+    ......
+```
+You may need to go to your virtual environment (venv)'s folder and look for the following file at this path: ***venv/lib/python/site-packages/TTS/tts/utils/io.py***. You then have to manually force the model to load not in weights only mode:
+
+```
+# Look for the chunk of code below:
+
+    is_local = os.path.isdir(path) or os.path.isfile(path)
+    if cache and not is_local:
+        with fsspec.open(
+            f"filecache::{path}",
+            filecache={"cache_storage": str(get_user_data_dir("tts_cache"))},
+            mode="rb",
+        ) as f:
+            # Add weights_only=False to this line!
+            return torch.load(f, map_location=map_location, weights_only=False, **kwargs)
+    else:
+        with fsspec.open(path, "rb") as f:
+            # This line as well!
+            return torch.load(f, map_location=map_location, weights_only=False, **kwargs)
+```
+
 
 Run in case got unicode issue
 ''chcp 65001''
