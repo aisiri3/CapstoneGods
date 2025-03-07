@@ -24,7 +24,7 @@ pip install -r requirements.txt
 
 To run the backend server:
 ``` 
-python combined_app.py 
+python app.py 
 ```
 
 ## Set up Frontend
