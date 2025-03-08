@@ -13,8 +13,12 @@ import * as THREE from "three";
 import { Ahmad } from "@/components/ahmadAvatar";
 
 export default function MainPage() {
-  // Shared state for avatar data (lipSync and optionally response text)
-  const [avatarData, setAvatarData] = useState({ lipSync: null, response: "" });
+  // Shared state for avatar data
+  const [avatarState, setAvatarState] = useState({
+    lipSync: null,
+    audioUrl: null,
+    response: ""
+  });
 
   const EnableShadows = () => {
     const { gl } = useThree();
@@ -25,10 +29,16 @@ export default function MainPage() {
 
   // Callback to update avatar data when Chat gets new info from backend
   const handleAvatarUpdate = (data) => {
-    setAvatarData(data);
+    console.log("Main page received avatar update:", {
+      lipSyncAvailable: !!data.lipSync,
+      audioUrlAvailable: !!data.audioUrl,
+      responseLength: data.response ? data.response.length : 0
+    });
+    
+    setAvatarState(data);
   };
 
-  // Force layout recalculation on page load (for changing avatars, etc.)
+  // Force layout recalculation on page load
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("resize"));
@@ -65,8 +75,8 @@ export default function MainPage() {
               intensity={1.5} 
             />
             <Ahmad 
-              lipSyncData={avatarData.lipSync} 
-              audioUrl={avatarData.audioUrl} 
+              lipSyncData={avatarState.lipSync} 
+              audioUrl={avatarState.audioUrl} 
               position={[-0.6, -3.05, 5]} /* Positioned further left */
               rotation={[0, Math.PI * 0.06, 0]}
               scale={2}

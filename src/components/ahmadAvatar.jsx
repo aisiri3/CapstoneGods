@@ -3,17 +3,47 @@ import { useGraph } from '@react-three/fiber'
 import { Environment, OrbitControls, useAnimations, useFBX, useGLTF } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
 import { LipSyncController } from './lipsyncController'
-import { SpeechController } from './SpeechSync'
 
-export function Ahmad(props) {
+export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
   const headMeshRef = useRef();
+  const audioRef = useRef(null);
   const { scene } = useGLTF('/avatars/HeyAhmad.glb')
   const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
   const { nodes, materials } = useGraph(clone)
   const group = useRef()
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // State for intro and response lipsync
+  const [introLipSyncData, setIntroLipSyncData] = useState(null);
+  const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response'
+  const [activeLipSync, setActiveLipSync] = useState(null);
+
+  // Debug logging for props
+  useEffect(() => {
+    console.log("Ahmad avatar received props:", {
+      lipSyncDataAvailable: !!lipSyncData,
+      lipSyncDataLength: lipSyncData ? lipSyncData.length : 0,
+      audioUrlAvailable: !!audioUrl,
+    });
+  }, [lipSyncData, audioUrl]);
+
+  // Load intro lipsync data when component mounts
+  useEffect(() => {
+    fetch('/audios/male-casual-intro.json')
+      .then(response => response.json())
+      .then(data => {
+        console.log("Loaded intro lipsync data:", data.mouthCues.length, "mouth cues");
+        setIntroLipSyncData(data.mouthCues);
+        setActiveLipSync(data.mouthCues);
+      })
+      .catch(error => {
+        console.error("Error loading intro lipsync data:", error);
+      });
+  }, []);
 
   // Load and name animations
-  const { animations: idleAnimation } = useFBX("/animations/Breathing Idle.fbx")
+  const { animations: idleAnimation } = useFBX("/animations/Third Idle.fbx")
   const { animations: talkingAnimation } = useFBX("/animations/Talking.fbx")
   const { animations: wavingAnimation } = useFBX("/animations/Waving.fbx")
   
@@ -21,73 +51,181 @@ export function Ahmad(props) {
   talkingAnimation[0].name = "Talking"
   wavingAnimation[0].name = "Waving"
 
-  // // Debug model structure
-  // useEffect(() => {
-  //   console.log("Model structure:", {
-  //     armature: nodes.Armature,
-  //     bones: nodes.Armature?.children,
-  //     hips: nodes.Armature?.getObjectByName('Hips')
-  //   })
-  // }, [nodes])
+  // default facial animations
+  useEffect(() => {
+    if (!nodes.UnionAvatars_Head_1 || !nodes.UnionAvatars_Head_1.morphTargetDictionary) {
+      console.log("Head mesh or morphTargetDictionary not available yet");
+      return;
+    }
+    
+    // Setup default facial expressions
+    try {
+      // Avatar is always smiling
+      nodes.UnionAvatars_Head_1.morphTargetInfluences[
+        nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileLeft"]
+      ] = 0.8;
 
-  // Create speech controller
-  const speech = SpeechController({
-    meshRef: headMeshRef,
-    audioUrl: '/audios/casual-female-intro.wav',
-    lipSyncUrl: '/audios/casual-female-intro.json'
-  });
+      nodes.UnionAvatars_Head_1.morphTargetInfluences[
+        nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileRight"]
+      ] = 0.8;
+      
+      console.log("Default facial expressions set successfully");
+      setIsInitialized(true);
+    } catch (e) {
+      console.error("Error setting default facial expressions:", e);
+    }
+    
+    // Function to handle blinking
+    const blink = () => {
+      try {
+        nodes.UnionAvatars_Head_1.morphTargetInfluences[
+          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeBlinkLeft"]
+        ] = 1;
+    
+        nodes.UnionAvatars_Head_1.morphTargetInfluences[
+          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeBlinkRight"]
+        ] = 1;
+    
+        setTimeout(() => {
+          nodes.UnionAvatars_Head_1.morphTargetInfluences[
+            nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeBlinkLeft"]
+          ] = 0;
+    
+          nodes.UnionAvatars_Head_1.morphTargetInfluences[
+            nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeBlinkRight"]
+          ] = 0;
+        }, 100); // Blink duration (adjust for smoothness)
+      } catch (e) {
+        console.error("Error during blink animation:", e);
+      }
+    };
+  
+    // Blink every 3-6 seconds randomly
+    const blinkInterval = setInterval(() => {
+      blink();
+    }, Math.random() * 3000 + 3000); 
+  
+    return () => clearInterval(blinkInterval); // Cleanup on unmount
+  }, [nodes]);
 
   const { actions } = useAnimations(
     [idleAnimation[0], talkingAnimation[0], wavingAnimation[0]], 
     group
   )
 
-  const [animation, setAnimation] = useState("Talking")
-  const [lipSyncData, setLipSyncData] = useState(null);
+  const [animation, setAnimation] = useState("Idle");
 
+  // Play intro audio when component mounts and intro lipsync data is loaded
   useEffect(() => {
-    // Load the JSON file
-    fetch('/audios/casual-female-intro.json')
-      .then(res => res.json())
-      .then(data => setLipSyncData(data.mouthCues));
-  }, []);
+    if (isInitialized && introLipSyncData && activeAudio === 'intro') {
+      console.log("Playing intro audio");
+      
+      // Create audio element for intro
+      const introAudio = new Audio('/audios/male-casual-intro.wav');
+      audioRef.current = introAudio;
+      
+      // Set up event handlers
+      introAudio.onplay = () => {
+        console.log("Intro audio playback started");
+        setIsPlaying(true);
+        setAnimation("Waving");
+      };
+      
+      introAudio.onended = () => {
+        console.log("Intro audio playback ended");
+        setIsPlaying(false);
+        setAnimation("Idle");
+        setActiveAudio('response'); // Switch to response mode after intro
+      };
+      
+      introAudio.onpause = () => {
+        console.log("Intro audio playback paused");
+        setIsPlaying(false);
+        setAnimation("Idle");
+      };
+      
+      // Start playing after a short delay to ensure everything is loaded
+      setTimeout(() => {
+        introAudio.play().catch(err => {
+          console.error("Error playing intro audio:", err);
+        });
+      }, 500);
+      
+      return () => {
+        introAudio.pause();
+        introAudio.onplay = null;
+        introAudio.onended = null;
+        introAudio.onpause = null;
+      };
+    }
+  }, [isInitialized, introLipSyncData, activeAudio]);
 
+  // Handle playing response audio when provided
   useEffect(() => {
-    console.log(nodes.UnionAvatars_Head_1.morphTargetDictionary)
-  }, []);
+    if (audioUrl && activeAudio === 'response') {
+      console.log("Setting up response audio with URL:", audioUrl);
+      
+      // Create new audio element for response
+      const responseAudio = new Audio();
+      audioRef.current = responseAudio;
+      
+      // Set up new audio
+      responseAudio.src = audioUrl;
+      
+      // Event handlers
+      responseAudio.onplay = () => {
+        console.log("Response audio playback started");
+        setIsPlaying(true);
+        setActiveLipSync(lipSyncData);
+        setAnimation("Talking");
+      };
+      
+      responseAudio.onended = () => {
+        console.log("Response audio playback ended");
+        setIsPlaying(false);
+        setAnimation("Idle");
+      };
+      
+      responseAudio.onpause = () => {
+        console.log("Response audio playback paused");
+        setIsPlaying(false);
+        setAnimation("Idle");
+      };
+      
+      // Start playing the audio
+      responseAudio.play().catch(err => {
+        console.error("Error playing response audio:", err);
+      });
+      
+      // Cleanup function
+      return () => {
+        responseAudio.pause();
+        responseAudio.onplay = null;
+        responseAudio.onended = null;
+        responseAudio.onpause = null;
+      };
+    }
+  }, [audioUrl, activeAudio, lipSyncData]);
 
+  // Handle animations
   useEffect(() => {
     if (actions && actions[animation]) {
+      console.log(`Switching to animation: ${animation}`);
+      
       // Fade out any currently running animations
       Object.values(actions).forEach(action => {
         if (action.isRunning()) {
-          action.fadeOut(0.5)
+          action.fadeOut(0.5);
         }
-      })
+      });
 
       // Play the new animation
-      actions[animation].reset().fadeIn(0.5).play()
-
-      return () => {
-        if (actions[animation]) {
-          actions[animation].fadeOut(0.5)
-        }
-      }
+      actions[animation].reset().fadeIn(0.5).play();
     }
-  }, [animation, actions])
-
-  // Start speech when component mounts
-  useEffect(() => {
-    // Small delay to ensure everything is loaded
-    const timer = setTimeout(() => {
-      speech.startSpeech();
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
+  }, [animation, actions]);
 
   return (
-    <group {...props} dispose={null} ref={group}>
+    <group position={position} rotation={rotation} scale={scale} dispose={null} ref={group}>
       <primitive object={nodes.Armature} />
       <skinnedMesh 
         geometry={nodes.UnionAvatars_Body.geometry} 
@@ -115,7 +253,6 @@ export function Ahmad(props) {
         skeleton={nodes.UnionAvatars_Top.skeleton} 
       />
 
-      {/* claude inssert */}
       <skinnedMesh 
         ref={headMeshRef}
         name="UnionAvatars_Head_1"
@@ -125,20 +262,18 @@ export function Ahmad(props) {
         morphTargetDictionary={nodes.UnionAvatars_Head_1.morphTargetDictionary}
         morphTargetInfluences={nodes.UnionAvatars_Head_1.morphTargetInfluences}
       />
-      <LipSyncController 
-        meshRef={headMeshRef}
-        rhubarbData={lipSyncData}
-      />
+      
+      {/* LipSync controller for dynamically updating lip movements */}
+      {activeLipSync && isPlaying && (
+        <LipSyncController 
+          meshRef={headMeshRef}
+          rhubarbData={activeLipSync}
+          isPlaying={isPlaying}
+          audioElement={audioRef.current}
+        />
+      )}
 
       <group name="UnionAvatars_Head">
-        <skinnedMesh 
-          name="UnionAvatars_Head_1" 
-          geometry={nodes.UnionAvatars_Head_1.geometry} 
-          material={materials.v3_phr_unionavatars_head_d} 
-          skeleton={nodes.UnionAvatars_Head_1.skeleton} 
-          morphTargetDictionary={nodes.UnionAvatars_Head_1.morphTargetDictionary} 
-          morphTargetInfluences={nodes.UnionAvatars_Head_1.morphTargetInfluences} 
-        />
         <skinnedMesh 
           name="UnionAvatars_Head_2" 
           geometry={nodes.UnionAvatars_Head_2.geometry} 

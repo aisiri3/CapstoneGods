@@ -1,11 +1,15 @@
 """
 Chat services with integrated Llama text generation.
 """
-from flask import current_app
+from flask import current_app, send_file
 import time
+import os
+from pathlib import Path
+import base64
 
 from workflows.tts.coqui import get_tts_model, tts_workflow, playback_speech
 from workflows.text_to_text.english import get_model as get_llama_model
+from workflows.lipsync.lipsync import generate_rhubarb_lipsync
 
 # Initialize models
 tts_model = None
@@ -59,13 +63,18 @@ def generate_llama_response(text):
         return f"I couldn't process that properly. Here's what you said: {text}"
 
 def process_speech(text):
-    """Process speech from text input, using Llama for text generation."""
+    """
+    Process speech from text input, using Llama for text generation,
+    TTS for audio generation, and Rhubarb for lipsync.
+    
+    Returns a dict containing the response text, audio file path, and lipsync data.
+    """
     # TODO: Log prompt in database
     
     # Generate response using Llama
     response_text = generate_llama_response(text)
     
-    # TODO: Log the repsonse in database
+    # TODO: Log the response in database
     
     # Get TTS model
     model = get_tts()
@@ -77,9 +86,30 @@ def process_speech(text):
     # Convert response to speech
     tts_workflow(model, response_text, speaker_path, output_path)
     
-    return response_text
+    # Generate lipsync data
+    lipsync_data = generate_rhubarb_lipsync(output_path)
+    
+    # Get just the mouth cues from the lipsync data
+    mouth_cues = lipsync_data.get("mouthCues", [])
+    
+    # Return all necessary data
+    return {
+        "response_text": response_text,
+        "audio_path": output_path,
+        "mouth_cues": mouth_cues
+    }
+
+def encode_audio_to_base64(audio_path):
+    """Convert audio file to base64 for transmission to frontend."""
+    try:
+        with open(audio_path, "rb") as audio_file:
+            encoded_audio = base64.b64encode(audio_file.read()).decode('utf-8')
+            return encoded_audio
+    except Exception as e:
+        print(f"Error encoding audio: {e}")
+        return None
 
 def play_audio():
-    """Play the generated audio file."""
+    """Play the generated audio file (no longer needed for frontend playback)."""
     output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
     playback_speech(output_path)

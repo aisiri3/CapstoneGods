@@ -1,11 +1,12 @@
 """
 Chat routes.
 """
-from flask import request, current_app
+from flask import request, current_app, send_file
 from flask_restful import Resource
+import os
 
 from config import Config
-from api.chat.services import process_speech, play_audio
+from api.chat.services import process_speech, play_audio, encode_audio_to_base64
 
 class Speak(Resource):
     def post(self):
@@ -20,18 +21,42 @@ class Speak(Resource):
 
             input_text = data["text"]
                 
-            # Process the speech -- put through llama and TTS
-            response_text = process_speech(input_text)
+            # Process the speech -- put through llama, TTS, and lipsync
+            result = process_speech(input_text)
             
-            return {"response": response_text}, 200
+            # Encode the audio file to base64 for transmission
+            encoded_audio = encode_audio_to_base64(result["audio_path"])
+            
+            # Return all the data needed by the frontend
+            return {
+                "response": result["response_text"],
+                "audio": encoded_audio,
+                "mouthCues": result["mouth_cues"]
+            }, 200
 
         except Exception as e:
             return {"error": str(e)}, 500
 
+class GetAudioFile(Resource):
+    def get(self):
+        try:
+            # Get the audio file path from configuration
+            output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
+            
+            # Check if file exists
+            if not os.path.exists(output_path):
+                return {"error": "Audio file not found"}, 404
+                
+            # Return the audio file
+            return send_file(output_path, mimetype="audio/wav")
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+# This route is kept for backward compatibility but is now deprecated
 class PlayAudio(Resource):
     def post(self):
         try:
-            # Play the generated audio file
+            # Play the generated audio file on the backend (deprecated)
             play_audio()
             return {"status": "audio_played"}, 200
         except Exception as e:
@@ -40,4 +65,5 @@ class PlayAudio(Resource):
 def register_routes(api):
     """Register the chat routes with the API."""
     api.add_resource(Speak, '/speak')
-    api.add_resource(PlayAudio, '/play_audio')
+    api.add_resource(GetAudioFile, '/get_audio')
+    api.add_resource(PlayAudio, '/play_audio')  # Kept for backward compatibility
