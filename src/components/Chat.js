@@ -9,23 +9,32 @@ export default function Chat({ onAvatarStateChange }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState(null);
   const [introPlayed, setIntroPlayed] = useState(false);
+  const introMessageRef = useRef(false); // Use ref to track intro message display across renders
 
   // Function to display the intro message in the chatbox
   const displayIntroMessage = () => {
+    // Check if intro message has already been displayed
+    if (introMessageRef.current) return;
+    
     const introMessage = "Hello! Let's have a simple, casual conversation.";
     const botDiv = document.createElement("div");
     botDiv.className = "outputMessage";
     botDiv.innerText = introMessage;
     conversationBoxRef.current.prepend(botDiv);
     conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
+    
+    // Mark intro as displayed using the ref
+    introMessageRef.current = true;
   };
 
   // Use useEffect to trigger the intro behavior when the component mounts
   useEffect(() => {
-    // We no longer play the intro audio here - the avatar component handles it
-    displayIntroMessage();
-    setIntroPlayed(true);
-  }, []);
+    // Only display the intro message if it hasn't been displayed yet
+    if (!introPlayed) {
+      displayIntroMessage();
+      setIntroPlayed(true);
+    }
+  }, [introPlayed]);
 
   // Function to convert base64 to blob URL
   const createAudioBlobUrl = (base64AudioData) => {
