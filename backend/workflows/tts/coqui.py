@@ -28,9 +28,6 @@ def get_tts_model(device=device):
 
 def tts_workflow(tts, input_text, speaker_path, output_path):
     """Convert text to speech using the TTS model."""
-    with open("conversation_input_text.txt", "a", encoding="utf-8") as input_file:
-        input_file.write(input_text + "\n")
-
     # Text to Speech conversion
     tts.tts_to_file(
         text=input_text, 
