@@ -7,7 +7,7 @@
 }
 
 /* To use a blurred background image */
-.main-container::before {
+/* .main-container::before {
   content: "";
   position: fixed;
   top: 0;
@@ -17,8 +17,32 @@
   background-image: url("https://cdna.artstation.com/p/assets/images/images/008/147/102/large/ellis-kim-bg-cafe-sunset.jpg?1510772695");
   background-size: cover;
   background-position: center;
-  filter: blur(4px) brightness(50%); /* Blurs and fades the background */
+  filter: brightness(60%);
   z-index: -1;
+} */
+
+.video-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(1px) brightness(80%);
+  /* fade in from black */
+  opacity: 0;  /* Start fully transparent */
+  animation: fadeIn 5s ease-in-out forwards;  
+  z-index: -1;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Avatar container - full page canvas underneath everything */

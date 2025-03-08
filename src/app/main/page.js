@@ -38,6 +38,13 @@ export default function MainPage() {
     setAvatarState(data);
   };
 
+  window.addEventListener("load", function () {
+    let video = document.getElementById("bg-video");
+    video.play().catch(error => {
+      console.log("Autoplay failed. User interaction required.");
+    });
+  });  
+
   // Force layout recalculation on page load
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -55,6 +62,11 @@ export default function MainPage() {
 
       {/* Main container for avatar and chat */}
       <div className="main-container">
+        <video id="bg-video" className='video-background' autoPlay loop>
+          <source src="cafe-background.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+
         {/* Full-page avatar container */}
         <div className="avatar-container">
           <Canvas 

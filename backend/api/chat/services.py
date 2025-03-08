@@ -81,7 +81,7 @@ def process_speech(text):
     
     # Get configuration
     # TODO: Set speaker path based on settings selected on frontend
-    speaker_path = current_app.config.get('TTS_SPEAKER_PATH', 'inputs/male-formal.wav')
+    speaker_path = current_app.config.get('TTS_SPEAKER_PATH', 'inputs/male_formal.wav')
     output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
     
     # Convert response to speech

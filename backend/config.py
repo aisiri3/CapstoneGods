@@ -1,5 +1,6 @@
 """
-Configuration settings for the Flask application.
+Configuration settings for the Flask application. (Database + TTS model settings)
+TODO: Change TTS and model settings based on persona/language
 """
 import os
 
@@ -13,7 +14,7 @@ class Config:
     MYSQL_CHARSET = 'utf8mb4'
     
     # TTS model settings
-    TTS_SPEAKER_PATH = os.getenv('TTS_SPEAKER_PATH', 'inputs/business-ethics.wav')
+    TTS_SPEAKER_PATH = os.getenv('TTS_SPEAKER_PATH', 'inputs/male_formal.wav')
     TTS_OUTPUT_PATH = os.getenv('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
     
     # Llama model settings
