@@ -13,11 +13,13 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
   const group = useRef()
   const [isPlaying, setIsPlaying] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // State for intro and response lipsync
   const [introLipSyncData, setIntroLipSyncData] = useState(null);
   const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response'
   const [activeLipSync, setActiveLipSync] = useState(null);
+  const ANIMATION_FADE_TIME = 0.5; // seconds
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
@@ -35,7 +37,7 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
 
   // Load and name animations
   const { animations: idleAnimation } = useFBX("/animations/Third Idle.fbx")
-  const { animations: talkingAnimation } = useFBX("/animations/Talking.fbx")
+  const { animations: talkingAnimation } = useFBX("/animations/Long Talking.fbx")
   const { animations: wavingAnimation } = useFBX("/animations/Waving.fbx")
   
   idleAnimation[0].name = "Idle"
@@ -99,34 +101,14 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
     return () => clearInterval(blinkInterval); // Cleanup on unmount
   }, [nodes]);
 
-  const { actions } = useAnimations(
+  const { actions, mixer } = useAnimations(
     [idleAnimation[0], talkingAnimation[0], wavingAnimation[0]], 
     group
   )
 
   const [animation, setAnimation] = useState("Idle");
 
-  // Smoothing of animations
-  useEffect(() => {
-    if (actions && actions[animation]) {
-      // Fade out any currently running animations
-      Object.values(actions).forEach(action => {
-        if (action.isRunning()) {
-          action.fadeOut(0)
-        }
-      })
-
-      // Play the new animation
-      actions[animation].reset().fadeIn(0).play()
-
-      return () => {
-        if (actions[animation]) {
-          actions[animation].fadeOut(0)
-        }
-      }
-    }
-  }, [animation, actions])
-
+  /* Set animation states based on playing/loading/otherwise */
   // Play intro audio when component mounts and intro lipsync data is loaded
   useEffect(() => {
     if (isInitialized && introLipSyncData && activeAudio === 'intro') {
@@ -219,7 +201,7 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
     }
   }, [audioUrl, activeAudio, lipSyncData]);
 
-  // Handle animations
+  // Handle animation transitions
   useEffect(() => {
     if (actions && actions[animation]) {
       console.log(`Switching to animation: ${animation}`);
@@ -228,13 +210,30 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
       Object.values(actions).forEach(action => {
         if (action.isRunning()) {
           action.fadeOut(0.5);
+          // action.reset();
         }
       });
 
       // Play the new animation
-      actions[animation].reset().fadeIn(0.5).play();
+      actions[animation].fadeIn(0.4).play();
+      // actions[animation].reset();
     }
   }, [animation, actions]);
+
+  // // Handle animation transitions
+  // useEffect(() => {
+  //   // Only fade in the new animation, don't reset old ones
+  //   actions[animation]
+  //     ?.reset() // Reset only the new animation before starting it
+  //     .fadeIn(mixer.time > 0 ? ANIMATION_FADE_TIME : 0)
+  //     .play();
+      
+  //   // This cleanup function runs when animation changes or component unmounts
+  //   // It properly fades out the previous animation without resetting it
+  //   return () => {
+  //     actions[animation]?.fadeOut(ANIMATION_FADE_TIME);
+  //   };
+  // }, [animation, actions, mixer.time]);
 
   return (
     <group position={position} rotation={rotation} scale={scale} dispose={null} ref={group}>

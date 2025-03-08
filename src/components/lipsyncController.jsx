@@ -15,9 +15,9 @@ const PHONEME_TO_VISEME = {
 };
 
 // Strength of the mouth movements
-const VISEME_INTENSITY = 1.0;
+const VISEME_INTENSITY = 1.5;
 // Smoothing factor (lower = smoother but slower transitions) -- find the sweet spot
-const SMOOTHING_FACTOR = 0.45;
+const SMOOTHING_FACTOR = 0.4;
 
 export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElement }) {
   const animationFrameIdRef = useRef(null);
