@@ -19,15 +19,6 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
   const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response'
   const [activeLipSync, setActiveLipSync] = useState(null);
 
-  // Debug logging for props
-  useEffect(() => {
-    console.log("Ahmad avatar received props:", {
-      lipSyncDataAvailable: !!lipSyncData,
-      lipSyncDataLength: lipSyncData ? lipSyncData.length : 0,
-      audioUrlAvailable: !!audioUrl,
-    });
-  }, [lipSyncData, audioUrl]);
-
   // Load intro lipsync data when component mounts
   useEffect(() => {
     fetch('/audios/male-casual-intro.json')
@@ -114,6 +105,27 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
   )
 
   const [animation, setAnimation] = useState("Idle");
+
+  // Smoothing of animations
+  useEffect(() => {
+    if (actions && actions[animation]) {
+      // Fade out any currently running animations
+      Object.values(actions).forEach(action => {
+        if (action.isRunning()) {
+          action.fadeOut(0)
+        }
+      })
+
+      // Play the new animation
+      actions[animation].reset().fadeIn(0).play()
+
+      return () => {
+        if (actions[animation]) {
+          actions[animation].fadeOut(0)
+        }
+      }
+    }
+  }, [animation, actions])
 
   // Play intro audio when component mounts and intro lipsync data is loaded
   useEffect(() => {

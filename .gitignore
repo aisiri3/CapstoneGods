@@ -55,6 +55,7 @@ src/app/temp
 
 # outputs
 backend/outputs/user_output.wav
+backend/outputs/user_output_lipsync.json
 
 # unnecessary stuff
 backend/conversation_input_text.txt
