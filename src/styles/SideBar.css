@@ -19,7 +19,7 @@
 
 .sidebar.expanded {
   width: 250px;
-  /* width: 17vw */
+  /* width: A17vw */
 }
 
 .sidebar.collapsed {
@@ -68,6 +68,7 @@
 /* Sidebar Items */
 .sidebar-items {
   margin-left: 10px;
+  position: relative;
 }
 
 /* Adjust margin-top based on sidebar state */
@@ -122,9 +123,45 @@
   border-radius: 5px;
 }
 
+.submenu-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .submenu-item:hover {
   font-weight: bold;
   color: rgb(183, 123, 235);
+}
+
+.submenu-item.selected {
+  font-weight: bold;
+  color: rgb(183, 123, 235);
+}
+
+.check-icon {
+  font-weight: bold;
+  color: rgb(183, 123, 235);
+}
+
+/* Complete Selection Button */
+.complete-selection-button {
+  margin-top: 15px;
+  margin-left: 35px;
+  margin-right: 20px;
+  padding: 8px 15px;
+  background-color: #6a31fb;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.complete-selection-button:hover {
+  background-color: rgb(53, 32, 77);
 }
 
 /* Settings Section */

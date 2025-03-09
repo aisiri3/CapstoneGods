@@ -6,25 +6,43 @@ import Image from "next/image";
 import "@/styles/SideBar.css";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/Tooltip";
 // icons
-import { AlignLeft, AlignRight, ChevronDown, Settings, UserPen } from "lucide-react";
+import { AlignLeft, AlignRight, ChevronDown, Settings, UserPen, Check } from "lucide-react";
 
 export default function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [user, setUser] = useState(null); // Store user data
-  // TODO: persona/gender logic
-  const [selectedPersona, setSelectedPersona] = useState("casual-female");
+  
+  // Default selections
+  const defaultSelections = {
+    gender: "Male", 
+    persona: "Casual", 
+    language: "English"
+  };
+  
+  // Current selections
+  const [selections, setSelections] = useState({...defaultSelections});
+  
+  // Last saved selections
+  const [lastSavedSelections, setLastSavedSelections] = useState({...defaultSelections});
 
-   // fetch user info for display (from localStorage)
-   useEffect(() => {
+  // fetch user info for display (from localStorage)
+  useEffect(() => {
     // Retrieve user info from localStorage
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser) {
       setUser(storedUser);
     }
+    
+    // Check if there are stored selections in localStorage
+    const storedSelections = JSON.parse(localStorage.getItem("userSelections"));
+    if (storedSelections) {
+      setSelections(storedSelections);
+      setLastSavedSelections(storedSelections);
+    }
   }, []);
 
-console.log("GOT USER: ", user);
+  console.log("GOT USER: ", user);
 
   const toggleSidebar = () => {
     if (isExpanded) {
@@ -50,6 +68,45 @@ console.log("GOT USER: ", user);
       }));
     }
   };
+  
+  // Function to handle selection of an option
+  const handleSelection = (category, value) => {
+    setSelections(prev => ({
+      ...prev,
+      [category]: value
+    }));
+  };
+  
+  // Function to check if selections have changed from last saved state
+  const hasSelectionChanged = () => {
+    return Object.keys(selections).some(key => 
+      selections[key] !== lastSavedSelections[key]
+    );
+  };
+  
+  // Function to handle complete selection
+  const handleCompleteSelection = () => {
+    // Check if any changes were made
+    if (!hasSelectionChanged()) {
+      alert("You have not made any changes yet!");
+      return;
+    }
+    
+    // Save selections to localStorage
+    localStorage.setItem("userSelections", JSON.stringify(selections));
+    
+    // Update last saved selections
+    setLastSavedSelections({...selections});
+    
+    // Here you would add code to send the selections to your backend
+    console.log("Selections to be sent to backend:", selections);
+    
+    // Close any open submenus
+    setOpenSubmenus({});
+    
+    // Provide feedback
+    alert("Your selection has been saved!");
+  };
 
   // Submenus items
   const menuItems = [
@@ -57,7 +114,7 @@ console.log("GOT USER: ", user);
       id: "gender",
       label: "Select Gender",
       icon: "/icons/gender-icon.png",
-      submenu: ["Female", "Male"],
+      submenu: ["Male", "Female"],
     },
     {
       id: "persona",
@@ -126,14 +183,33 @@ console.log("GOT USER: ", user);
               {isExpanded && openSubmenus[item.id] && item.submenu && (
                 <div className="submenu">
                   {item.submenu.map((subItem) => (
-                    <div key={subItem} className="submenu-item">
-                      {subItem}
+                    <div 
+                      key={subItem} 
+                      className={`submenu-item ${selections[item.id] === subItem ? 'selected' : ''}`}
+                      onClick={() => handleSelection(item.id, subItem)}
+                    >
+                      <div className="submenu-content">
+                        <span>{subItem}</span>
+                        {selections[item.id] === subItem && (
+                          <Check size={16} className="check-icon" />
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
           ))}
+          
+          {/* Complete Selection Button - Always visible when expanded */}
+          {isExpanded && (
+            <button 
+              className="complete-selection-button"
+              onClick={handleCompleteSelection}
+            >
+              Complete Selection
+            </button>
+          )}
         </div>
 
         {/* Settings */}
@@ -158,7 +234,6 @@ console.log("GOT USER: ", user);
         </div>
 
         {/* Display fetched user info */}
-        {/* TODO: display fetched info */}
         <div className="user-section">
           <div className="sidebar-icon">
             <Image
@@ -171,8 +246,8 @@ console.log("GOT USER: ", user);
             />
             {isExpanded && (
               <div className="user-info">
-                <span className="username">{user.username || "User"}</span>
-                <span className="user-email">{user.email || "No Email"}</span>
+                <span className="username">{user?.username || "User"}</span>
+                <span className="user-email">{user?.email || "No Email"}</span>
               </div>
             )}
           </div>
