@@ -42,8 +42,6 @@ export default function Sidebar() {
     }
   }, []);
 
-  console.log("GOT USER: ", user);
-
   const toggleSidebar = () => {
     if (isExpanded) {
       setOpenSubmenus({});

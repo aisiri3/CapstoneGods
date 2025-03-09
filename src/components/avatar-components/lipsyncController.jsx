@@ -14,8 +14,9 @@ const PHONEME_TO_VISEME = {
   'X': 43,  // viseme_sil (rest position)
 };
 
+
 // Strength of the mouth movements
-const VISEME_INTENSITY = 1.5;
+const VISEME_INTENSITY = 1.4;
 // Smoothing factor (lower = smoother but slower transitions) -- find the sweet spot
 const SMOOTHING_FACTOR = 0.4;
 

@@ -1,6 +1,6 @@
-import React, { Suspense, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useGraph } from '@react-three/fiber'
-import { Environment, OrbitControls, useAnimations, useFBX, useGLTF } from '@react-three/drei'
+import { useAnimations, useFBX, useGLTF } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
 import { LipSyncController } from './lipsyncController'
 
@@ -19,7 +19,10 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
   const [introLipSyncData, setIntroLipSyncData] = useState(null);
   const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response'
   const [activeLipSync, setActiveLipSync] = useState(null);
-  const ANIMATION_FADE_TIME = 0.5; // seconds
+
+  useEffect(() => {
+      console.log("Morph target dictionary:", nodes.UnionAvatars_Head_1.morphTargetDictionary);
+    }, []);
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
@@ -36,9 +39,9 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
   }, []);
 
   // Load and name animations
-  const { animations: idleAnimation } = useFBX("/animations/Third Idle.fbx")
-  const { animations: talkingAnimation } = useFBX("/animations/Long Talking.fbx")
-  const { animations: wavingAnimation } = useFBX("/animations/Waving.fbx")
+  const { animations: idleAnimation } = useFBX("/animations/ahmad/Idle.fbx")
+  const { animations: talkingAnimation } = useFBX("/animations/ahmad/Long Talking.fbx")
+  const { animations: wavingAnimation } = useFBX("/animations/ahmad/Waving.fbx")
   
   idleAnimation[0].name = "Idle"
   talkingAnimation[0].name = "Talking"
