@@ -6,6 +6,7 @@ import { Scatter } from "react-chartjs-2";
 import { Info } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip";
 import { v4 as uuidv4 } from 'uuid';
+import { useRouter } from 'next/navigation';
 
 import {
   Chart as ChartJS,
@@ -21,20 +22,60 @@ import "@/styles/Eval.css";
 ChartJS.register(LinearScale, PointElement, LineElement, ChartTooltip, Legend);
 
 export default function ChatbotEvaluationDashboard() {
+  const router = useRouter();
   const [entries, setEntries] = useState([]);
+  const [personas, setPersonas] = useState([]);
   const [newEntry, setNewEntry] = useState({
     prompt: "",
     sampleResponse: "",
     actualResponse: "",
     responseTime: 0,
-    similarityScore: 0
+    similarityScore: 0,
+    personaId: "", 
   });
 
   const [averageSimilarity, setAverageSimilarity] = useState(0);
   const [averageResponseTime, setAverageResponseTime] = useState(0);
 
-  // Fetch entries from the Next.js API route
+  // Fetch entries and personas from the Next.js API route
   useEffect(() => {
+    const fetchPersonas = async () => {
+      try {
+        const response = await fetch('/api/personas');
+        
+        // Check if the response is OK before trying to parse JSON
+        if (!response.ok) {
+          // Try to get error details if available
+          let errorMessage = "Failed to fetch personas";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch (e) {
+            // If JSON parsing fails, use the status text
+            errorMessage = `Failed to fetch personas: ${response.status} ${response.statusText}`;
+          }
+          throw new Error(errorMessage);
+        }
+        
+        // Only parse JSON if response was successful
+        const data = await response.json();
+        
+        // Map the data to ensure it has consistent field names
+        const mappedPersonas = data.map(persona => ({
+          // Ensure we have both id and persona_id for compatibility
+          id: persona.persona_id || persona.id,
+          persona_id: persona.persona_id || persona.id,
+          name: persona.name,
+          description: persona.persona_description || persona.description,
+          persona_description: persona.persona_description || persona.description
+        }));
+        
+        setPersonas(mappedPersonas);
+      } catch (error) {
+        console.error("Error fetching personas:", error);
+      }
+    };
+
     const fetchEntries = async () => {
       try {
         const response = await fetch('/api/evaluation');
@@ -80,6 +121,8 @@ export default function ChatbotEvaluationDashboard() {
       }
     };
 
+    // Fetch both personas and entries
+    fetchPersonas();
     fetchEntries();
   }, []);
 
@@ -209,7 +252,8 @@ export default function ChatbotEvaluationDashboard() {
         sampleResponse: "",
         actualResponse: "",
         responseTime: 0,
-        similarityScore: 0
+        similarityScore: 0,
+        personaId: ""
       });
   
     } catch (error) {
@@ -217,6 +261,9 @@ export default function ChatbotEvaluationDashboard() {
     }
   };
   
+  const handleNavigateToPersonaTools = () => {
+    router.push('/persona-developer-tools');
+  };
 
   const handleStartEvaluation = async () => {
     try {
@@ -252,7 +299,6 @@ export default function ChatbotEvaluationDashboard() {
     }
   };
   
-
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -367,6 +413,39 @@ export default function ChatbotEvaluationDashboard() {
             className="mt-2 input-field"
           />
         </div>
+
+        {/* Dropdown to select persona - MOVED FROM PERSONA EVALUATION */}
+        <div className="form-section">
+          <label className="mt-4 form-label">Select Persona</label>
+          <select
+            name="personaId"
+            value={newEntry.personaId}
+            onChange={handleInputChange}
+            className="mt-2 input-field text-gray-900 persona-select"
+            style={{ 
+              width: "100%", 
+              maxWidth: "100%",
+              whiteSpace: "normal",
+              textOverflow: "clip"
+            }}
+          >
+            <option value="">Select a persona</option>
+            {personas.map((persona) => (
+              <option 
+                key={persona.persona_id || persona.id} 
+                value={persona.persona_id || persona.id}
+                style={{ 
+                  width: "100%",
+                  whiteSpace: "normal",
+                  overflow: "visible",
+                  textOverflow: "clip"
+                }}
+              >
+                {persona.name}
+              </option>
+            ))}
+          </select>
+        </div>
   
         {/* Form sections for input fields */}
         <div className="form-section">
@@ -447,8 +526,19 @@ export default function ChatbotEvaluationDashboard() {
             ))}
           </tbody>
         </table>
+
+        {/* New button to navigate to persona tools */}
+        <div className="flex mt-8">
+          <button
+            onClick={handleNavigateToPersonaTools}
+            className="button bg-violet-700 hover:bg-violet-950 text-white font-bold px-4 py-2 rounded"
+            style={{ width: "200px" }}
+          >
+            Add a Persona
+          </button>
+        </div>
+
       </div>
     </div>
   );
-
 }

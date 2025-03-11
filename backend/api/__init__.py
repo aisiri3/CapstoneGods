@@ -13,8 +13,10 @@ api = Api(api_bp)
 from api.auth.routes import register_routes as register_auth_routes
 from api.chat.routes import register_routes as register_chat_routes
 from api.evaluation.routes import register_routes as register_eval_routes
+from api.persona.routes import register_routes as register_persona_routes
 
 # Register routes with the API
 register_auth_routes(api)
 register_chat_routes(api)
 register_eval_routes(api)
+register_persona_routes(api)

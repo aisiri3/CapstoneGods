@@ -1,3 +1,31 @@
+select.input-field {
+  width: 100% !important;
+  max-width: 100% !important;
+  text-overflow: clip !important;
+}
+
+/* Critical fix for dropdown options */
+select.input-field option {
+  width: 100% !important;
+  white-space: normal !important;
+  min-width: 300px !important; /* Force minimum width */
+  padding-right: 20px !important;
+  text-overflow: ellipsis !important;
+  overflow: visible !important;
+}
+
+/* Additional custom styles for the select dropdown */
+.persona-select {
+  min-width: 300px !important;
+  width: 100% !important;
+}
+
+/* 
+  React Component Fix:
+  Replace your dropdown code with this:
+*/
+
+
 .main-form {
   display: flex;
   flex-direction: column;
@@ -100,3 +128,11 @@ textarea.input-field {
   background-color: #3c1b5980; /* Equivalent to Tailwind's bg-gray-800 */
   color: white;
 }
+
+.input-field {
+  width: 100%;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
