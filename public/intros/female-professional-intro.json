@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "soundFile": "/Users/natalie_1/Desktop/capstone-configure-personas/backend/outputs/user_output.wav",
+    "duration": 3.47
+  },
+  "mouthCues": [
+    { "start": 0.00, "end": 0.03, "value": "X" },
+    { "start": 0.03, "end": 0.15, "value": "C" },
+    { "start": 0.15, "end": 0.22, "value": "B" },
+    { "start": 0.22, "end": 0.36, "value": "F" },
+    { "start": 0.36, "end": 0.44, "value": "A" },
+    { "start": 0.44, "end": 0.51, "value": "B" },
+    { "start": 0.51, "end": 0.85, "value": "F" },
+    { "start": 0.85, "end": 1.48, "value": "X" },
+    { "start": 1.48, "end": 1.58, "value": "B" },
+    { "start": 1.58, "end": 1.65, "value": "C" },
+    { "start": 1.65, "end": 1.72, "value": "F" },
+    { "start": 1.72, "end": 1.79, "value": "B" },
+    { "start": 1.79, "end": 1.86, "value": "C" },
+    { "start": 1.86, "end": 1.93, "value": "G" },
+    { "start": 1.93, "end": 2.00, "value": "C" },
+    { "start": 2.00, "end": 2.07, "value": "G" },
+    { "start": 2.07, "end": 2.14, "value": "E" },
+    { "start": 2.14, "end": 2.22, "value": "A" },
+    { "start": 2.22, "end": 2.27, "value": "C" },
+    { "start": 2.27, "end": 2.46, "value": "B" },
+    { "start": 2.46, "end": 2.60, "value": "C" },
+    { "start": 2.60, "end": 2.88, "value": "B" },
+    { "start": 2.88, "end": 3.47, "value": "X" }
+  ]
+}
