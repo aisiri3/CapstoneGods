@@ -34,25 +34,40 @@ class Personas(Resource):
 
         # Check if required fields are present in the incoming data
         if not all(field in data for field in required_fields):
-            return jsonify({"error": "Missing required fields"}), 400
+            return {"error": "Missing required fields"}, 400
 
         try:
-            # Insert the new persona into the database
+            # Check if persona with same name already exists
             cur = mysql.connection.cursor()
+            cur.execute("SELECT * FROM personas WHERE name = %s", (data["name"],))
+            existing_persona = cur.fetchone()
+            
+            if existing_persona:
+                cur.close()
+                return {"error": "Persona with this name already exists"}, 409
+            
+            # Insert the new persona into the database
             query = """
                 INSERT INTO personas (name, persona_description)
                 VALUES (%s, %s)
             """
             cur.execute(query, (data["name"], data["persona_description"]))
+            persona_id = cur.lastrowid
             mysql.connection.commit()
+            
+            # Fetch the newly created persona
+            cur.execute("SELECT * FROM personas WHERE persona_id = %s", (persona_id,))
+            new_persona = cur.fetchone()
+            columns = [col[0] for col in cur.description]
             cur.close()
-
-            # Return a success message after insertion
-            return jsonify({"message": "Persona added successfully"}), 201
+            
+            # Return the data as a dictionary, not as a jsonify response
+            result = dict(zip(columns, new_persona))
+            return result, 201
 
         except Exception as e:
-            # Handle exceptions and return an error message
-            return jsonify({"error": str(e)}), 500
+            # Return a dictionary, not a jsonify response
+            return {"error": str(e)}, 500
 
 def register_routes(api):
     """Register the personas routes with the API."""

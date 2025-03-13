@@ -358,23 +358,26 @@ export default function ChatbotEvaluationDashboard() {
         {/* Container for Overview and Chart Sections */}
         <div className="flex flex-row space-x-4 mb-6">
 
-          {/* Results Overview */}
-          <div className="w-1/2 p-4 overview-section">
+          {/* Results Overview - with vertical centering */}
+          <div className="w-1/2 p-4 overview-section flex flex-col justify-center">
             <h1 className="mb-2 sections-header">Results Overview</h1>
 
-            {/* Similarity Score */}
-            <div className="mt-12 text-center">
-              <div className="text-5xl font-bold text-cyan-400 large-value">{averageSimilarity.toFixed(2)}</div>
-              <div className="mt-3 text-sm text-cyan-400">Average Similarity Score</div>
-            </div>
+            {/* Results container with flex layout */}
+            <div className="flex flex-col justify-center flex-grow">
+              {/* Similarity Score */}
+              <div className="mb-16 text-center">
+                <div className="text-5xl font-bold text-cyan-400 large-value">{averageSimilarity.toFixed(2)}</div>
+                <div className="text-sm text-cyan-400">Average Similarity Score</div>
+              </div>
 
-            {/* Response Time */}
-            <div className="mt-12 text-center">
-              <div className="text-5xl font-bold text-rose-400">{averageResponseTime.toFixed(2)} ms</div>
-              <div className="mt-3 text-sm text-rose-400">Average Response Time</div>
+              {/* Response Time */}
+              <div className="text-center">
+                <div className="text-5xl font-bold text-rose-400">{averageResponseTime.toFixed(2)} ms</div>
+                <div className="mt-3 text-sm text-rose-400">Average Response Time</div>
+              </div>
             </div>
           </div>
-  
+            
           {/* Chart */}
           <div className="w-1/2 p-4 chart-section">
             <h1 className="mb-4 sections-header">Graph of Similarity Score and Response</h1>
@@ -488,56 +491,62 @@ export default function ChatbotEvaluationDashboard() {
         </div>
 
         <hr className='mt-10 mb-4'></hr>
-  
-        {/* Display Evaluation Entries */}
-        <h2 className="mt-4 text-xl font-bold mt-12 form-header">Evaluation Entries</h2>
-        <table className="custom-table">
-          <thead>
-            <tr>
-              <th>Prompt</th>
-              <th>Sample Response</th>
-              <th>Actual Response</th>
-              <th>Response Time (ms)</th>
-              <th>
-                Similarity Score
-                <TooltipProvider delayDuration={70}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="ml-2 text-gray-300 cursor-pointer" size={18} />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Similarity score refers to the <br></br>
-                          bla bla bla bla bla...</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.id || uuidv4()}>
-                <td>{entry.prompt}</td>
-                <td>{entry.sampleResponse}</td>
-                <td>{entry.actualResponse}</td>
-                <td className='font-bold'>{entry.responseTime}</td>
-                <td className='font-bold'>{entry.similarityScore}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Display Evaluation Entries with scrollable container */}
+        <div className="mt-4">
+          <h2 className="text-xl font-bold mb-4 form-header">Evaluation Entries</h2>
+          <div 
+            className="overflow-auto border border-gray-700 rounded-md" 
+            style={{ 
+              maxHeight: "50vh",
+              width: "100%",
+              scrollbarWidth: "thin",
+              scrollbarColor: "#4f4f4f #1f1f1f"
+            }}>
+            <table className="custom-table w-full">
+              <thead className="sticky top-0 z-10" style={{ backgroundColor: "#1e293b" }}>
+                <tr>
+                  <th>Prompt</th>
+                  <th>Sample Response</th>
+                  <th>Actual Response</th>
+                  <th>Response Time (ms)</th>
+                  <th>Similarity Score
+                    <TooltipProvider delayDuration={70}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="ml-2 text-gray-300 cursor-pointer" size={18} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Similarity score refers to the<br/>bla bla bla bla bla...</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.id || uuidv4()}>
+                    <td>{entry.prompt}</td>
+                    <td>{entry.sampleResponse}</td>
+                    <td>{entry.actualResponse}</td>
+                    <td className="font-bold">{entry.responseTime}</td>
+                    <td className="font-bold">{entry.similarityScore}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* New button to navigate to persona tools */}
         <div className="flex mt-8">
           <button
             onClick={handleNavigateToPersonaTools}
-            className="button bg-violet-700 hover:bg-violet-950 text-white font-bold px-4 py-2 rounded"
-            style={{ width: "200px" }}
-          >
+            className="button bg-violet-700 hover:bg-violet-950 text-white px-3 py-2 rounded"
+            style={{ width: "200px" }}>
             Add a Persona
           </button>
         </div>
-
       </div>
     </div>
   );

@@ -1,13 +1,12 @@
 "use client";
 
 import { React, useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import "@/styles/Settings.css";
 import PersonaEvaluationDashboard from '@/components/PersonaEvaluationDashboard';
 
-export default function DeveloperTools() {
+export default function PersonaDeveloperTools() {
   const router = useRouter();
 
   const handleBack = () => {
