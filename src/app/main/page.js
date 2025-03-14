@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import Chat from "@/components/Chat";
 import Sidebar from "@/components/Sidebar";
@@ -34,6 +34,12 @@ export default function MainPage() {
     language: "English"
   });
 
+  // State to toggle video fade-in animation
+  const [videoKey, setVideoKey] = useState(0);
+
+  // Reference to the video element for controlling playback
+  const videoRef = useRef(null);
+
   const EnableShadows = () => {
     const { gl } = useThree();
     gl.shadowMap.enabled = true;
@@ -52,6 +58,13 @@ export default function MainPage() {
     setAvatarState(data);
   };
 
+  // Get background video source based on persona
+  const getBackgroundVideo = () => {
+    return avatarSelection.persona === "Professional" 
+      ? "backgrounds/office-background.mp4" 
+      : "backgrounds/cafe-background.mp4";
+  };
+
   // Load saved avatar selection from localStorage on initial render
   useEffect(() => {
     const storedSelections = JSON.parse(localStorage.getItem("userSelections"));
@@ -64,6 +77,9 @@ export default function MainPage() {
     const handleSelectionChange = (event) => {
       console.log("Avatar selection changed:", event.detail);
       setAvatarSelection(event.detail);
+      
+      // Increment the video key to force re-render and restart animation
+      setVideoKey(prevKey => prevKey + 1);
     };
 
     window.addEventListener('avatarSelectionChanged', handleSelectionChange);
@@ -72,6 +88,16 @@ export default function MainPage() {
       window.removeEventListener('avatarSelectionChanged', handleSelectionChange);
     };
   }, []);
+
+  // Handle video playback when background changes
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.load();
+      videoRef.current.play().catch(error => {
+        console.log("Autoplay failed. User interaction required.");
+      });
+    }
+  }, [avatarSelection.persona, videoKey]);
 
   // Function to determine which avatar component to render based on selection
   const getAvatarComponent = () => {
@@ -112,7 +138,7 @@ export default function MainPage() {
   // Get the appropriate avatar component
   const CurrentAvatar = getAvatarComponent();
 
-  // TODO: Confirm this: Get avatar positioning based on persona
+  // Get avatar positioning based on persona
   const getAvatarPosition = () => {
     if (avatarSelection.persona === "Casual") {
       return {
@@ -131,13 +157,6 @@ export default function MainPage() {
 
   const avatarProps = getAvatarPosition();
 
-  window.addEventListener("load", function () {
-    let video = document.getElementById("bg-video");
-    video.play().catch(error => {
-      console.log("Autoplay failed. User interaction required.");
-    });
-  });  
-
   // Force layout recalculation on page load
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -155,8 +174,16 @@ export default function MainPage() {
 
       {/* Main container for avatar and chat */}
       <div className="main-container">
-        <video id="bg-video" className='video-background' autoPlay loop muted>
-          <source src="backgrounds/cafe-background.mp4" type="video/mp4" />
+        <video 
+          key={videoKey} // This forces a complete re-render when changed
+          id="bg-video" 
+          className="video-background"
+          autoPlay 
+          loop 
+          muted
+          ref={videoRef}
+        >
+          <source src={getBackgroundVideo()} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
 
