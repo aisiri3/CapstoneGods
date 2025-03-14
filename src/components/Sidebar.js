@@ -39,6 +39,9 @@ export default function Sidebar() {
     if (storedSelections) {
       setSelections(storedSelections);
       setLastSavedSelections(storedSelections);
+    } else {
+      // If no stored selections, save the defaults
+      localStorage.setItem("userSelections", JSON.stringify(defaultSelections));
     }
   }, []);
 
@@ -96,8 +99,11 @@ export default function Sidebar() {
     // Update last saved selections
     setLastSavedSelections({...selections});
     
-    // Here you would add code to send the selections to your backend
-    console.log("Selections to be sent to backend:", selections);
+    // Dispatch a custom event to notify other components about the selection change
+    const event = new CustomEvent('avatarSelectionChanged', { 
+      detail: { ...selections }
+    });
+    window.dispatchEvent(event);
     
     // Close any open submenus
     setOpenSubmenus({});

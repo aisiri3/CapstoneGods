@@ -9,32 +9,101 @@ export default function Chat({ onAvatarStateChange }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState(null);
   const [introPlayed, setIntroPlayed] = useState(false);
-  const introMessageRef = useRef(false); // Use ref to track intro message display across renders
+  const [lastSelection, setLastSelection] = useState(null);
+
+  // State to store current avatar selection
+  const [avatarSelection, setAvatarSelection] = useState({
+    gender: "Male", 
+    persona: "Casual", 
+    language: "English"
+  });
+
+  // Define intro messages based on language and persona
+  const introMessages = {
+    English: {
+      Formal: "Nice to meet you! Shall we have a formal discussion?",
+      Casual: "Hello, let's have a simple, casual conversation."
+    },
+    Malay: {
+      Formal: "To be confirmed: Malay formal intro.",
+      Casual: "To be confirmed: Malay casual intro."
+    }
+  };
+
+  // Get intro message based on current selection
+  const getIntroMessage = () => {
+    const { language, persona } = avatarSelection;
+    const formalKey = persona === "Professional" ? "Formal" : "Casual";
+    return introMessages[language]?.[formalKey] || introMessages.English.Casual;
+  };
+
+  // Load initial avatar selection from localStorage
+  useEffect(() => {
+    try {
+      const storedSelections = JSON.parse(localStorage.getItem("userSelections"));
+      if (storedSelections) {
+        setAvatarSelection(storedSelections);
+        setLastSelection(storedSelections);
+      }
+    } catch (error) {
+      console.error("Error loading stored selections:", error);
+    }
+  }, []);
+
+  // Function to clear all messages in the chat
+  const clearChat = () => {
+    if (conversationBoxRef.current) {
+      // Remove all messages
+      while (conversationBoxRef.current.firstChild) {
+        conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
+      }
+    }
+  };
+
+  // Listen for changes in avatar selection
+  useEffect(() => {
+    const handleSelectionChange = (event) => {
+      console.log("Chat received avatar selection change:", event.detail);
+      
+      // Clear chat completely when selection changes
+      clearChat();
+      
+      // Update avatar selection
+      setAvatarSelection(event.detail);
+      
+      // Reset intro state to trigger new intro message
+      setIntroPlayed(false);
+      
+      // Store the last selection to compare
+      setLastSelection(event.detail);
+    };
+
+    window.addEventListener('avatarSelectionChanged', handleSelectionChange);
+
+    return () => {
+      window.removeEventListener('avatarSelectionChanged', handleSelectionChange);
+    };
+  }, []);
 
   // Function to display the intro message in the chatbox
   const displayIntroMessage = () => {
-    // Check if intro message has already been displayed
-    if (introMessageRef.current) return;
+    if (!conversationBoxRef.current) return;
     
-    const introMessage = "Hello! Let's have a simple, casual conversation.";
+    const introMessage = getIntroMessage();
     const botDiv = document.createElement("div");
     botDiv.className = "outputMessage";
     botDiv.innerText = introMessage;
     conversationBoxRef.current.prepend(botDiv);
     conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
-    
-    // Mark intro as displayed using the ref
-    introMessageRef.current = true;
   };
 
-  // Use useEffect to trigger the intro behavior when the component mounts
+  // Use useEffect to trigger the intro message when component mounts or selection changes
   useEffect(() => {
-    // Only display the intro message if it hasn't been displayed yet
     if (!introPlayed) {
       displayIntroMessage();
       setIntroPlayed(true);
     }
-  }, [introPlayed]);
+  }, [introPlayed, avatarSelection]);
 
   // Function to convert base64 to blob URL
   const createAudioBlobUrl = (base64AudioData) => {
@@ -85,7 +154,10 @@ export default function Chat({ onAvatarStateChange }) {
         const response = await fetch('/api/speak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: userMessage })
+          body: JSON.stringify({ 
+            text: userMessage,
+            avatarConfig: avatarSelection // Send current avatar config to backend
+          })
         });
 
         const data = await response.json();
