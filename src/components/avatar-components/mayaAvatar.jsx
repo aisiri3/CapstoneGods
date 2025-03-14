@@ -4,10 +4,10 @@ import { useAnimations, useFBX, useGLTF } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
 import { LipSyncController } from './lipsyncController'
 
-export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
+export function Maya({ lipSyncData, audioUrl, position, rotation, scale }) {
   const headMeshRef = useRef();
   const audioRef = useRef(null);
-  const { scene } = useGLTF('/avatars/Lanaplsman.glb')
+  const { scene } = useGLTF('/avatars/Mayaiseating.glb')
   const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
   const { nodes, materials } = useGraph(clone)
   const group = useRef()
@@ -41,9 +41,9 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
   }, []);
 
   // Load and name animations
-  const { animations: idleAnimation } = useFBX("/animations/lana/Lana Idle.fbx")
-  const { animations: talkingAnimation } = useFBX("/animations/lana/Lana Talking.fbx")
-  const { animations: wavingAnimation } = useFBX("/animations/lana/Lana Waving.fbx")
+  const { animations: idleAnimation } = useFBX("/animations/maya/Maya Idle.fbx")
+  const { animations: talkingAnimation } = useFBX("/animations/maya/Maya Talking.fbx")
+  const { animations: wavingAnimation } = useFBX("/animations/maya/Maya Waving.fbx")
   
   idleAnimation[0].name = "Idle"
   talkingAnimation[0].name = "Talking"
@@ -61,11 +61,19 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
       // Avatar is always smiling
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileLeft"]
-      ] = 0.6;
+      ] = 0.4;
 
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileRight"]
-      ] = 0.6;
+      ] = 0.4;
+
+      nodes.UnionAvatars_Head_1.morphTargetInfluences[
+        nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintLeft"]
+      ] = 0.5;
+
+      nodes.UnionAvatars_Head_1.morphTargetInfluences[
+        nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintRight"]
+      ] = 0.5;
       
       console.log("Default facial expressions set successfully");
       setIsInitialized(true);
@@ -177,15 +185,6 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
         setIsPlaying(true);
         setActiveLipSync(lipSyncData);
         setAnimation("Talking");
-        
-        // smile a bit more when talking
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintLeft"]
-        ] = 0.3;
-    
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintRight"]
-        ] = 0.3;
       };
       
       responseAudio.onended = () => {
@@ -269,4 +268,4 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
 }
 
 // Preload the GLB model
-useGLTF.preload('/avatars/Lanaplsman.glb')
+useGLTF.preload('/avatars/Mayaiseating.glb')

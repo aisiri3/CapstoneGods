@@ -4,10 +4,10 @@ import { useAnimations, useFBX, useGLTF } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
 import { LipSyncController } from './lipsyncController'
 
-export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
+export function AhmadFormal({ lipSyncData, audioUrl, position, rotation, scale }) {
   const headMeshRef = useRef();
   const audioRef = useRef(null);
-  const { scene } = useGLTF('/avatars/Lanaplsman.glb')
+  const { scene } = useGLTF('/avatars/HeyAhmad.glb')
   const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
   const { nodes, materials } = useGraph(clone)
   const group = useRef()
@@ -21,14 +21,12 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
   const [activeLipSync, setActiveLipSync] = useState(null);
 
   useEffect(() => {
-    if (nodes.UnionAvatars_Head_1 && nodes.UnionAvatars_Head_1.morphTargetDictionary) {
       console.log("Morph target dictionary:", nodes.UnionAvatars_Head_1.morphTargetDictionary);
-    }
-  }, [nodes.UnionAvatars_Head_1]);
+    }, []);
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
-    fetch('/intros/female-casual-intro.json')
+    fetch('/intros/male-casual-intro.json')
       .then(response => response.json())
       .then(data => {
         console.log("Loaded intro lipsync data:", data.mouthCues.length, "mouth cues");
@@ -41,9 +39,9 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
   }, []);
 
   // Load and name animations
-  const { animations: idleAnimation } = useFBX("/animations/lana/Lana Idle.fbx")
-  const { animations: talkingAnimation } = useFBX("/animations/lana/Lana Talking.fbx")
-  const { animations: wavingAnimation } = useFBX("/animations/lana/Lana Waving.fbx")
+  const { animations: idleAnimation } = useFBX("/animations/ahmad/Idle.fbx")
+  const { animations: talkingAnimation } = useFBX("/animations/ahmad/Long Talking.fbx")
+  const { animations: wavingAnimation } = useFBX("/animations/ahmad/Waving.fbx")
   
   idleAnimation[0].name = "Idle"
   talkingAnimation[0].name = "Talking"
@@ -61,11 +59,11 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
       // Avatar is always smiling
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileLeft"]
-      ] = 0.6;
+      ] = 0.8;
 
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileRight"]
-      ] = 0.6;
+      ] = 0.8;
       
       console.log("Default facial expressions set successfully");
       setIsInitialized(true);
@@ -120,7 +118,7 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
       console.log("Playing intro audio");
       
       // Create audio element for intro
-      const introAudio = new Audio('/intros/female-casual-intro.wav');
+      const introAudio = new Audio('/intros/male-casual-intro.wav');
       audioRef.current = introAudio;
       
       // Set up event handlers
@@ -177,15 +175,6 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
         setIsPlaying(true);
         setActiveLipSync(lipSyncData);
         setAnimation("Talking");
-        
-        // smile a bit more when talking
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintLeft"]
-        ] = 0.3;
-    
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintRight"]
-        ] = 0.3;
       };
       
       responseAudio.onended = () => {
@@ -224,32 +213,68 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
       Object.values(actions).forEach(action => {
         if (action.isRunning()) {
           action.fadeOut(0.5);
+          // action.reset();
         }
       });
 
       // Play the new animation
       actions[animation].fadeIn(0.4).play();
+      // actions[animation].reset();
     }
   }, [animation, actions]);
 
+  // // Handle animation transitions
+  // useEffect(() => {
+  //   // Only fade in the new animation, don't reset old ones
+  //   actions[animation]
+  //     ?.reset() // Reset only the new animation before starting it
+  //     .fadeIn(mixer.time > 0 ? ANIMATION_FADE_TIME : 0)
+  //     .play();
+      
+  //   // This cleanup function runs when animation changes or component unmounts
+  //   // It properly fades out the previous animation without resetting it
+  //   return () => {
+  //     actions[animation]?.fadeOut(ANIMATION_FADE_TIME);
+  //   };
+  // }, [animation, actions, mixer.time]);
+
   return (
     <group position={position} rotation={rotation} scale={scale} dispose={null} ref={group}>
-      <primitive object={nodes.Hips} />
-      <primitive object={nodes.neutral_bone} />
-      <skinnedMesh geometry={nodes.UnionAvatars_Body.geometry} material={materials.UnionAvatars_Body} skeleton={nodes.UnionAvatars_Body.skeleton} />
-      <skinnedMesh geometry={nodes.UnionAvatars_Bottom.geometry} material={materials.UnionAvatars_Bottom} skeleton={nodes.UnionAvatars_Bottom.skeleton} />
-      <skinnedMesh geometry={nodes.UnionAvatars_Hair.geometry} material={materials.UnionAvatars_Hair} skeleton={nodes.UnionAvatars_Hair.skeleton} />
-      <skinnedMesh geometry={nodes.UnionAvatars_Shoes.geometry} material={materials.UnionAvatars_Shoes} skeleton={nodes.UnionAvatars_Shoes.skeleton} />
-      <skinnedMesh geometry={nodes.UnionAvatars_Top.geometry} material={materials.UnionAvatars_Top} skeleton={nodes.UnionAvatars_Top.skeleton} />
-      
+      <primitive object={nodes.Armature} />
+      <skinnedMesh 
+        geometry={nodes.UnionAvatars_Body.geometry} 
+        material={materials.UnionAvatars_Body} 
+        skeleton={nodes.UnionAvatars_Body.skeleton} 
+      />
+      <skinnedMesh 
+        geometry={nodes.UnionAvatars_Bottom.geometry} 
+        material={materials.UnionAvatars_Bottom} 
+        skeleton={nodes.UnionAvatars_Bottom.skeleton} 
+      />
+      <skinnedMesh 
+        geometry={nodes.UnionAvatars_Hair.geometry} 
+        material={materials.UnionAvatars_Hair} 
+        skeleton={nodes.UnionAvatars_Hair.skeleton} 
+      />
+      <skinnedMesh 
+        geometry={nodes.UnionAvatars_Shoes.geometry} 
+        material={materials.UnionAvatars_Shoes} 
+        skeleton={nodes.UnionAvatars_Shoes.skeleton} 
+      />
+      <skinnedMesh 
+        geometry={nodes.UnionAvatars_Top.geometry} 
+        material={materials.UnionAvatars_Top} 
+        skeleton={nodes.UnionAvatars_Top.skeleton} 
+      />
+
       <skinnedMesh 
         ref={headMeshRef}
-        name="UnionAvatars_Head_1" 
-        geometry={nodes.UnionAvatars_Head_1.geometry} 
-        material={materials.v3_phr_unionavatars_head_d} 
-        skeleton={nodes.UnionAvatars_Head_1.skeleton} 
-        morphTargetDictionary={nodes.UnionAvatars_Head_1.morphTargetDictionary} 
-        morphTargetInfluences={nodes.UnionAvatars_Head_1.morphTargetInfluences} 
+        name="UnionAvatars_Head_1"
+        geometry={nodes.UnionAvatars_Head_1.geometry}
+        material={materials.v3_phr_unionavatars_head_d}
+        skeleton={nodes.UnionAvatars_Head_1.skeleton}
+        morphTargetDictionary={nodes.UnionAvatars_Head_1.morphTargetDictionary}
+        morphTargetInfluences={nodes.UnionAvatars_Head_1.morphTargetInfluences}
       />
       
       {/* LipSync controller for dynamically updating lip movements */}
@@ -262,11 +287,26 @@ export function Lana({ lipSyncData, audioUrl, position, rotation, scale }) {
         />
       )}
 
-      <skinnedMesh name="UnionAvatars_Head_2" geometry={nodes.UnionAvatars_Head_2.geometry} material={materials.UnionAvatars_Body} skeleton={nodes.UnionAvatars_Head_2.skeleton} morphTargetDictionary={nodes.UnionAvatars_Head_2.morphTargetDictionary} morphTargetInfluences={nodes.UnionAvatars_Head_2.morphTargetInfluences} />
-      <skinnedMesh name="UnionAvatars_Head_3" geometry={nodes.UnionAvatars_Head_3.geometry} material={materials.v3_phr_unionavatars_eye_ball_d} skeleton={nodes.UnionAvatars_Head_3.skeleton} morphTargetDictionary={nodes.UnionAvatars_Head_3.morphTargetDictionary} morphTargetInfluences={nodes.UnionAvatars_Head_3.morphTargetInfluences} />
+      <group name="UnionAvatars_Head">
+        <skinnedMesh 
+          name="UnionAvatars_Head_2" 
+          geometry={nodes.UnionAvatars_Head_2.geometry} 
+          material={materials.UnionAvatars_Body} 
+          skeleton={nodes.UnionAvatars_Head_2.skeleton} 
+          morphTargetDictionary={nodes.UnionAvatars_Head_2.morphTargetDictionary} 
+          morphTargetInfluences={nodes.UnionAvatars_Head_2.morphTargetInfluences} 
+        />
+        <skinnedMesh 
+          name="UnionAvatars_Head_3" 
+          geometry={nodes.UnionAvatars_Head_3.geometry} 
+          material={materials.v3_phr_unionavatars_eye_ball_d} 
+          skeleton={nodes.UnionAvatars_Head_3.skeleton} 
+          morphTargetDictionary={nodes.UnionAvatars_Head_3.morphTargetDictionary} 
+          morphTargetInfluences={nodes.UnionAvatars_Head_3.morphTargetInfluences} 
+        />
+      </group>
     </group>
   )
 }
 
-// Preload the GLB model
-useGLTF.preload('/avatars/Lanaplsman.glb')
+useGLTF.preload('/avatars/HeyAhmad.glb')

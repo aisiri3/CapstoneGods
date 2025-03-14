@@ -1,21 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useGraph, useFrame } from '@react-three/fiber'
+import { useGraph } from '@react-three/fiber'
 import { useAnimations, useFBX, useGLTF } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
-import * as THREE from 'three'
 import { LipSyncController } from './lipsyncController'
 
-export function LanaFormal({ lipSyncData, audioUrl, position = [0, 0, 0], rotation = [0, 0, 0], scale = 1 }) {
+export function LanaFormal({ lipSyncData, audioUrl, position, rotation, scale }) {
   const headMeshRef = useRef();
   const audioRef = useRef(null);
   const { scene } = useGLTF('/avatars/Lanaplsman.glb')
   const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
   const { nodes, materials } = useGraph(clone)
   const group = useRef()
-
   const [isPlaying, setIsPlaying] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [currentAction, setCurrentAction] = useState('idle');
+  const [isLoading, setIsLoading] = useState(false);
   
   // State for intro and response lipsync
   const [introLipSyncData, setIntroLipSyncData] = useState(null);
@@ -42,44 +40,32 @@ export function LanaFormal({ lipSyncData, audioUrl, position = [0, 0, 0], rotati
       });
   }, []);
 
-  // Use only the sitting animation like Nazriya
-  const { animations: sittingAnimation } = useFBX("/animations/lana/Lana Sitting.fbx")
-  sittingAnimation[0].name = "Idle"
+  // Load and name animations
+  const { animations: idleAnimation } = useFBX("/animations/lana/Lana Idle.fbx")
+  const { animations: talkingAnimation } = useFBX("/animations/lana/Lana Talking.fbx")
+  const { animations: wavingAnimation } = useFBX("/animations/lana/Lana Waving.fbx")
   
-  // Configure animations
-  const { actions, mixer } = useAnimations([sittingAnimation[0]], group)
+  idleAnimation[0].name = "Idle"
+  talkingAnimation[0].name = "Talking"
+  wavingAnimation[0].name = "Waving"
 
-  // Initialize and play the idle animation once
-  useEffect(() => {
-    if (actions.Idle) {
-      actions.Idle.play();
-    }
-  }, [actions]);
-  
   // default facial animations
   useEffect(() => {
     if (!nodes.UnionAvatars_Head_1 || !nodes.UnionAvatars_Head_1.morphTargetDictionary) {
+      console.log("Head mesh or morphTargetDictionary not available yet");
       return;
     }
     
-    // Setup default facial expressions - neutral smile
+    // Setup default facial expressions
     try {
-      // Avatar is always smiling slightly
+      // Avatar is always smiling
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileLeft"]
-      ] = 0.5;
+      ] = 0.6;
 
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileRight"]
-      ] = 0.5;
-
-      nodes.UnionAvatars_Head_1.morphTargetInfluences[
-        nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintLeft"]
-      ] = 0.2;
-      
-      nodes.UnionAvatars_Head_1.morphTargetInfluences[
-        nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintRight"]
-      ] = 0.2;
+      ] = 0.6;
       
       console.log("Default facial expressions set successfully");
       setIsInitialized(true);
@@ -106,7 +92,7 @@ export function LanaFormal({ lipSyncData, audioUrl, position = [0, 0, 0], rotati
           nodes.UnionAvatars_Head_1.morphTargetInfluences[
             nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeBlinkRight"]
           ] = 0;
-        }, 100); // Blink duration
+        }, 100); // Blink duration (adjust for smoothness)
       } catch (e) {
         console.error("Error during blink animation:", e);
       }
@@ -120,77 +106,14 @@ export function LanaFormal({ lipSyncData, audioUrl, position = [0, 0, 0], rotati
     return () => clearInterval(blinkInterval); // Cleanup on unmount
   }, [nodes]);
 
-  // Custom facial animations for talking/waving without changing body pose
-  const applyFacialAnimation = (animationType) => {
-    if (!nodes.UnionAvatars_Head_1?.morphTargetDictionary) return;
-    
-    try {
-      // Reset all facial morphs first (except base smile)
-      for (const key in nodes.UnionAvatars_Head_1.morphTargetDictionary) {
-        const index = nodes.UnionAvatars_Head_1.morphTargetDictionary[key];
-        if (key !== "mouthSmileLeft" && key !== "mouthSmileRight") {
-          nodes.UnionAvatars_Head_1.morphTargetInfluences[index] = 0;
-        }
-      }
-      
-      // Apply specific facial animation based on type
-      if (animationType === 'talking') {
-        // Add slight eyebrow raise for engagement
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["browInnerUp"]
-        ] = 0.4;
-        
-        // Add squint for more engaged expression
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintLeft"]
-        ] = 0.3;
-        
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintRight"]
-        ] = 0.3;
-      } 
-      else if (animationType === 'waving') {
-        // Wide smile for greeting
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileLeft"]
-        ] = 0.7;
-        
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileRight"]
-        ] = 0.7;
-        
-        // Friendly expression
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintLeft"]
-        ] = 0.5;
-        
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintRight"]
-        ] = 0.5;
-      }
-      else {
-        // Reset to default smile for idle
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileLeft"]
-        ] = 0.4;
-        
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileRight"]
-        ] = 0.4;
-        
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintLeft"]
-        ] = 0.2;
-        
-        nodes.UnionAvatars_Head_1.morphTargetInfluences[
-          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintRight"]
-        ] = 0.2;
-      }
-    } catch (e) {
-      console.error("Error applying facial animation:", e);
-    }
-  };
+  const { actions, mixer } = useAnimations(
+    [idleAnimation[0], talkingAnimation[0], wavingAnimation[0]], 
+    group
+  )
 
+  const [animation, setAnimation] = useState("Idle");
+
+  /* Set animation states based on playing/loading/otherwise */
   // Play intro audio when component mounts and intro lipsync data is loaded
   useEffect(() => {
     if (isInitialized && introLipSyncData && activeAudio === 'intro') {
@@ -204,23 +127,20 @@ export function LanaFormal({ lipSyncData, audioUrl, position = [0, 0, 0], rotati
       introAudio.onplay = () => {
         console.log("Intro audio playback started");
         setIsPlaying(true);
-        setCurrentAction('waving');
-        applyFacialAnimation('waving');
+        setAnimation("Waving");
       };
       
       introAudio.onended = () => {
         console.log("Intro audio playback ended");
         setIsPlaying(false);
-        setCurrentAction('idle');
-        applyFacialAnimation('idle');
+        setAnimation("Idle");
         setActiveAudio('response'); // Switch to response mode after intro
       };
       
       introAudio.onpause = () => {
         console.log("Intro audio playback paused");
         setIsPlaying(false);
-        setCurrentAction('idle');
-        applyFacialAnimation('idle');
+        setAnimation("Idle");
       };
       
       // Start playing after a short delay to ensure everything is loaded
@@ -256,22 +176,28 @@ export function LanaFormal({ lipSyncData, audioUrl, position = [0, 0, 0], rotati
         console.log("Response audio playback started");
         setIsPlaying(true);
         setActiveLipSync(lipSyncData);
-        setCurrentAction('talking');
-        applyFacialAnimation('talking');
+        setAnimation("Talking");
+        
+        // smile a bit more when talking
+        nodes.UnionAvatars_Head_1.morphTargetInfluences[
+          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintLeft"]
+        ] = 0.3;
+    
+        nodes.UnionAvatars_Head_1.morphTargetInfluences[
+          nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintRight"]
+        ] = 0.3;
       };
       
       responseAudio.onended = () => {
         console.log("Response audio playback ended");
         setIsPlaying(false);
-        setCurrentAction('idle');
-        applyFacialAnimation('idle');
+        setAnimation("Idle");
       };
       
       responseAudio.onpause = () => {
         console.log("Response audio playback paused");
         setIsPlaying(false);
-        setCurrentAction('idle');
-        applyFacialAnimation('idle');
+        setAnimation("Idle");
       };
       
       // Start playing the audio
@@ -289,32 +215,25 @@ export function LanaFormal({ lipSyncData, audioUrl, position = [0, 0, 0], rotati
     }
   }, [audioUrl, activeAudio, lipSyncData]);
 
-  // Position stabilization (optional, but useful if the model tends to shift)
+  // Handle animation transitions
   useEffect(() => {
-    if (!group.current) return;
-    
-    // Store the initial position
-    const initialPos = new THREE.Vector3().copy(group.current.position);
-    
-    // Check position periodically and reset if needed
-    const intervalId = setInterval(() => {
-      if (group.current && group.current.position.distanceTo(initialPos) > 0.5) {
-        console.log("Resetting position");
-        group.current.position.copy(initialPos);
-      }
-    }, 500);
-    
-    return () => clearInterval(intervalId);
-  }, []);
+    if (actions && actions[animation]) {
+      console.log(`Switching to animation: ${animation}`);
+      
+      // Fade out any currently running animations
+      Object.values(actions).forEach(action => {
+        if (action.isRunning()) {
+          action.fadeOut(0.5);
+        }
+      });
+
+      // Play the new animation
+      actions[animation].fadeIn(0.4).play();
+    }
+  }, [animation, actions]);
 
   return (
-    <group 
-      position={position} 
-      rotation={rotation} 
-      scale={scale} 
-      dispose={null} 
-      ref={group}
-    >
+    <group position={position} rotation={rotation} scale={scale} dispose={null} ref={group}>
       <primitive object={nodes.Hips} />
       <primitive object={nodes.neutral_bone} />
       <skinnedMesh geometry={nodes.UnionAvatars_Body.geometry} material={materials.UnionAvatars_Body} skeleton={nodes.UnionAvatars_Body.skeleton} />
