@@ -7,7 +7,7 @@ from TTS.tts.configs.xtts_config import XttsConfig  # Add this import
 from TTS.tts.models.xtts import XttsAudioConfig  # Add this import
 
 # Allow PyTorch to deserialize XttsConfig and XttsAudioConfig
-torch.serialization.add_safe_globals([XttsConfig, XttsAudioConfig])
+# torch.serialization.add_safe_globals([XttsConfig, XttsAudioConfig])
 
 from TTS.api import TTS
 import sounddevice as sd

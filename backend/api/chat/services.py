@@ -11,6 +11,9 @@ from workflows.tts.coqui import get_tts_model, tts_workflow, playback_speech
 from workflows.text_to_text.english import get_model as get_llama_model
 from workflows.lipsync.lipsync import generate_rhubarb_lipsync
 
+from transformers.utils.logging import disable_progress_bar
+disable_progress_bar()
+
 # Initialize models
 tts_model = None
 llama_model = None

@@ -5,12 +5,15 @@ import time
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from huggingface_hub import login
+from transformers.utils.logging import disable_progress_bar
+disable_progress_bar()
 
 def login_huggingface(huggingface_API):
     """Login to Hugging Face Hub."""
     login(huggingface_API)
 
-def init_model(model_id="meta-llama/Llama-2-7b-chat-hf"):
+
+def get_model(model_id="meta-llama/Llama-2-7b-chat-hf"):
     """Initialize the text-to-text model."""
     print("Initializing model...")
     tokenizer = AutoTokenizer.from_pretrained(model_id, use_auth_token=True)
@@ -70,46 +73,9 @@ def get_response(llama_pipeline, prompt):
 #     print("Note: Llama model is disabled for testing.")
 #     return response_text, 0.0
 
-def get_model():
-    """Get the model with memory optimization for limited resources."""
-    global llama_pipeline
-    try:
-        if 'llama_pipeline' not in globals() or llama_pipeline is None:
-            print("Initializing Llama pipeline with memory optimizations...")
-            
-            # Use BitsAndBytes for quantization
-            from transformers import BitsAndBytesConfig
-            
-            # 4-bit quantization config
-            quantization_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.float16,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_use_double_quant=True,
-            )
-            
-            # Load with disk offloading and quantization
-            model = AutoModelForCausalLM.from_pretrained(
-                "meta-llama/Llama-2-7b-chat-hf",
-                device_map="auto",  # Automatically decide what goes where
-                quantization_config=quantization_config,
-                offload_folder="offload",  # Folder for disk offloading
-                offload_state_dict=True,  # Enable offloading
-                low_cpu_mem_usage=True
-            )
-            
-            tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
-            
-            llama_pipeline = pipeline(
-                task="text-generation",
-                model=model,
-                tokenizer=tokenizer,
-                max_length=512
-            )
-            print("Llama pipeline initialized with memory optimization!")
-        return llama_pipeline
-    except Exception as e:
-        print(f"Error during Llama pipeline initialization: {e}")
-        import traceback
-        traceback.print_exc()
-        raise
+if __name__ == "__main__":
+    print("hey Im running llama")
+    llama_pipeline = get_model()
+    prompt = "Hi there! What is the day today in Singapore?"
+    response = get_response(llama_pipeline, prompt)
+    print(response)
