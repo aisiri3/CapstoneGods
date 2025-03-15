@@ -9,7 +9,10 @@ export default function Chat({ onAvatarStateChange }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState(null);
   const [introPlayed, setIntroPlayed] = useState(false);
-  const [lastSelection, setLastSelection] = useState(null);
+  const introDisplayedRef = useRef(false);
+  
+  // Debug counter to track component renders
+  const renderCountRef = useRef(0);
 
   // State to store current avatar selection
   const [avatarSelection, setAvatarSelection] = useState({
@@ -30,11 +33,23 @@ export default function Chat({ onAvatarStateChange }) {
     }
   };
 
+  // Debug: Track renders
+  useEffect(() => {
+    renderCountRef.current++;
+    console.log(`Chat component rendered (${renderCountRef.current}) with selection:`, 
+                avatarSelection.language, avatarSelection.persona);
+  });
+
   // Get intro message based on current selection
   const getIntroMessage = () => {
     const { language, persona } = avatarSelection;
+    console.log(`Getting intro message for: ${language}, ${persona}`);
+    
     const formalKey = persona === "Professional" ? "Formal" : "Casual";
-    return introMessages[language]?.[formalKey] || introMessages.English.Casual;
+    const message = introMessages[language]?.[formalKey] || introMessages.English.Casual;
+    
+    console.log(`Selected intro message: "${message}"`);
+    return message;
   };
 
   // Load initial avatar selection from localStorage
@@ -42,8 +57,8 @@ export default function Chat({ onAvatarStateChange }) {
     try {
       const storedSelections = JSON.parse(localStorage.getItem("userSelections"));
       if (storedSelections) {
+        console.log("Loading initial selection from localStorage:", storedSelections);
         setAvatarSelection(storedSelections);
-        setLastSelection(storedSelections);
       }
     } catch (error) {
       console.error("Error loading stored selections:", error);
@@ -68,14 +83,12 @@ export default function Chat({ onAvatarStateChange }) {
       // Clear chat completely when selection changes
       clearChat();
       
-      // Update avatar selection
+      // Update avatar selection - use callback to ensure we're using the latest value
       setAvatarSelection(event.detail);
       
       // Reset intro state to trigger new intro message
       setIntroPlayed(false);
-      
-      // Store the last selection to compare
-      setLastSelection(event.detail);
+      introDisplayedRef.current = false;
     };
 
     window.addEventListener('avatarSelectionChanged', handleSelectionChange);
@@ -87,9 +100,19 @@ export default function Chat({ onAvatarStateChange }) {
 
   // Function to display the intro message in the chatbox
   const displayIntroMessage = () => {
-    if (!conversationBoxRef.current) return;
+    if (!conversationBoxRef.current || introDisplayedRef.current) {
+      return;
+    }
     
+    // Mark as displayed immediately to prevent duplicate displays
+    introDisplayedRef.current = true;
+    
+    // Get the intro message AFTER the state has been updated
+    // This ensures we're using the current avatar selection
     const introMessage = getIntroMessage();
+    
+    console.log(`Displaying intro message: "${introMessage}" for ${avatarSelection.language}, ${avatarSelection.persona}`);
+    
     const botDiv = document.createElement("div");
     botDiv.className = "outputMessage";
     botDiv.innerText = introMessage;
@@ -97,13 +120,46 @@ export default function Chat({ onAvatarStateChange }) {
     conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
   };
 
-  // Use useEffect to trigger the intro message when component mounts or selection changes
+  // Use separate effects for better control
+  
+  // First effect: Clear flags when selection changes
+  useEffect(() => {
+    console.log("Avatar selection changed to:", avatarSelection);
+    
+    // Only reset if it's not the initial render
+    if (renderCountRef.current > 1) {
+      console.log("Resetting intro flags due to selection change");
+      introDisplayedRef.current = false;
+      setIntroPlayed(false);
+    }
+  }, [avatarSelection]);
+
+  // Second effect: Display intro when needed
   useEffect(() => {
     if (!introPlayed) {
-      displayIntroMessage();
-      setIntroPlayed(true);
+      console.log("Intro not played yet, scheduling display...");
+      
+      // Use a small delay to ensure state has been updated properly
+      const timer = setTimeout(() => {
+        console.log("Now displaying intro message...");
+        displayIntroMessage();
+        setIntroPlayed(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [introPlayed, avatarSelection]);
+
+  // Initialize on mount
+  useEffect(() => {
+    console.log("Chat component mounted");
+    introDisplayedRef.current = false;
+    setIntroPlayed(false);
+    
+    return () => {
+      cleanupPreviousAudio();
+    };
+  }, []);
 
   // Function to convert base64 to blob URL
   const createAudioBlobUrl = (base64AudioData) => {
@@ -230,7 +286,6 @@ export default function Chat({ onAvatarStateChange }) {
           onClick={sendMessage}
           disabled={isProcessing}
         >
-          {/* TODO: Replace with loading icon within chat */}
           {isProcessing ? '......' : 'SEND'}
         </button>
       </div>

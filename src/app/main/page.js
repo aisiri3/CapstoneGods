@@ -36,9 +36,15 @@ export default function MainPage() {
 
   // State to toggle video fade-in animation
   const [videoKey, setVideoKey] = useState(0);
+  
+  // State to toggle avatar component remounting
+  const [avatarKey, setAvatarKey] = useState(0);
 
   // Reference to the video element for controlling playback
   const videoRef = useRef(null);
+  
+  // Reference to any audio elements that need to be cleaned up
+  const activeAudioRef = useRef(null);
 
   const EnableShadows = () => {
     const { gl } = useThree();
@@ -55,7 +61,25 @@ export default function MainPage() {
       responseLength: data.response ? data.response.length : 0
     });
     
+    // Store a reference to the audio URL for cleanup
+    if (data.audioUrl && activeAudioRef.current) {
+      URL.revokeObjectURL(activeAudioRef.current);
+    }
+    
+    if (data.audioUrl) {
+      activeAudioRef.current = data.audioUrl;
+    }
+    
     setAvatarState(data);
+  };
+
+  // Function to clean up audio resources
+  const cleanupAudioResources = () => {
+    if (activeAudioRef.current) {
+      console.log("Cleaning up audio URL:", activeAudioRef.current);
+      URL.revokeObjectURL(activeAudioRef.current);
+      activeAudioRef.current = null;
+    }
   };
 
   // Get background video source based on persona
@@ -67,25 +91,43 @@ export default function MainPage() {
 
   // Load saved avatar selection from localStorage on initial render
   useEffect(() => {
-    const storedSelections = JSON.parse(localStorage.getItem("userSelections"));
-    if (storedSelections) {
-      setAvatarSelection(storedSelections);
-      console.log("Loaded avatar selection from localStorage:", storedSelections);
+    try {
+      const storedSelections = JSON.parse(localStorage.getItem("userSelections"));
+      if (storedSelections) {
+        setAvatarSelection(storedSelections);
+        console.log("Loaded avatar selection from localStorage:", storedSelections);
+      }
+    } catch (error) {
+      console.error("Error loading stored selections:", error);
     }
 
     // Listen for avatar selection changes from the sidebar
     const handleSelectionChange = (event) => {
       console.log("Avatar selection changed:", event.detail);
+      
+      // Clean up any existing audio URLs
+      cleanupAudioResources();
+      
+      // Reset avatar state
+      setAvatarState({
+        lipSync: null,
+        audioUrl: null,
+        response: ""
+      });
+      
+      // Update selection
       setAvatarSelection(event.detail);
       
-      // Increment the video key to force re-render and restart animation
+      // Increment keys to force remounting of components
       setVideoKey(prevKey => prevKey + 1);
+      setAvatarKey(prevKey => prevKey + 1);
     };
 
     window.addEventListener('avatarSelectionChanged', handleSelectionChange);
 
     return () => {
       window.removeEventListener('avatarSelectionChanged', handleSelectionChange);
+      cleanupAudioResources();
     };
   }, []);
 
@@ -177,7 +219,7 @@ export default function MainPage() {
         <video 
           key={videoKey} // This forces a complete re-render when changed
           id="bg-video" 
-          className="video-background"
+          className="video-background" 
           autoPlay 
           loop 
           muted
@@ -208,7 +250,9 @@ export default function MainPage() {
             />
             
             {/* Dynamic avatar component based on selection */}
+            {/* Key forces complete remount when selection changes */}
             <CurrentAvatar
+              key={avatarKey}
               lipSyncData={avatarState.lipSync} 
               audioUrl={avatarState.audioUrl}
               position={avatarProps.position}
@@ -220,7 +264,10 @@ export default function MainPage() {
 
         {/* Chat panel on the right */}
         <div className="chat-panel">
-          <Chat onAvatarStateChange={handleAvatarUpdate} /> 
+          <Chat 
+            key={avatarKey} // Force Chat component to reset when avatar changes
+            onAvatarStateChange={handleAvatarUpdate} 
+          /> 
         </div>
       </div>
     </div>
