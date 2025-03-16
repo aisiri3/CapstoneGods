@@ -1,11 +1,19 @@
 """
-Malay Text-to-Text Implementation.
+Malay Text-to-Text Implementation with Windows-friendly approach.
 """
 import time
 import torch
 import nltk
+import os
+import platform
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from huggingface_hub import login
+
+from transformers.utils.logging import disable_progress_bar
+disable_progress_bar()
+
+# Global variable to hold the pipeline
+mallam_pipeline = None
 
 def login_huggingface(huggingface_API):
     """Login to Hugging Face Hub."""
@@ -63,29 +71,43 @@ def get_model():
     """Get the model with memory optimization for limited resources."""
     global mallam_pipeline
     try:
-        if 'mallam_pipeline' not in globals() or mallam_pipeline is None:
-            print("Initializing MaLLaM pipeline with memory optimizations...")
+        if mallam_pipeline is None:
+            print("Initializing MaLLaM pipeline...")
             
-            # Use BitsAndBytes for quantization
-            from transformers import BitsAndBytesConfig
+            # Check if running on Windows
+            is_windows = platform.system() == "Windows"
             
-            # 4-bit quantization config
-            quantization_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.float16,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_use_double_quant=True,
-            )
-            
-            # Load with disk offloading and quantization
-            model = AutoModelForCausalLM.from_pretrained(
-                "mesolitica/mallam-5B-4096",
-                device_map="auto",  # Automatically decide what goes where
-                quantization_config=quantization_config,
-                offload_folder="offload_malay",  # Folder for disk offloading
-                offload_state_dict=True,  # Enable offloading
-                low_cpu_mem_usage=True
-            )
+            # Simpler initialization approach for Windows
+            if is_windows:
+                print("Running on Windows, using simplified model loading")
+                # Use a simpler approach without BitsAndBytes on Windows
+                model = AutoModelForCausalLM.from_pretrained(
+                    "mesolitica/mallam-5B-4096",
+                    device_map="auto",
+                    torch_dtype=torch.float16,
+                    low_cpu_mem_usage=True
+                )
+            else:
+                # Use BitsAndBytes for quantization on non-Windows platforms
+                from transformers import BitsAndBytesConfig
+                
+                # 4-bit quantization config
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.float16,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_use_double_quant=True,
+                )
+                
+                # Load with disk offloading and quantization
+                model = AutoModelForCausalLM.from_pretrained(
+                    "mesolitica/mallam-5B-4096",
+                    device_map="auto",
+                    quantization_config=quantization_config,
+                    offload_folder="offload_malay",
+                    offload_state_dict=True,
+                    low_cpu_mem_usage=True
+                )
             
             tokenizer = AutoTokenizer.from_pretrained("mesolitica/mallam-5B-4096")
             
@@ -95,10 +117,75 @@ def get_model():
                 tokenizer=tokenizer,
                 max_length=200
             )
-            print("MaLLaM pipeline initialized with memory optimization!")
+            print("MaLLaM pipeline initialized!")
         return mallam_pipeline
     except Exception as e:
         print(f"Error during MaLLaM pipeline initialization: {e}")
         import traceback
         traceback.print_exc()
-        raise
+        # Fallback to even simpler approach if first attempt fails
+        try:
+            print("Attempting fallback initialization...")
+            if mallam_pipeline is None:
+                # Simplest approach - use pipeline without custom model loading
+                mallam_pipeline = pipeline(
+                    "text-generation",
+                    model="mesolitica/mallam-5B-4096",
+                    max_length=200
+                )
+                print("Fallback MaLLaM pipeline initialized!")
+            return mallam_pipeline
+        except Exception as e2:
+            print(f"Fallback initialization also failed: {e2}")
+            traceback.print_exc()
+            raise
+
+# Direct use function
+def generate_mallam_response(text):
+    """Generate a response using the Mallam model - direct use from services.py"""
+    try:
+        model = get_model()
+        
+        # Measure response time
+        start_time = time.time()
+        
+        # Generate response using the Mallam pipeline
+        sequences = model(
+            text,
+            do_sample=True,
+            top_k=10,
+            num_return_sequences=1,
+            max_length=200,
+            temperature=0.7,
+        )
+        
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        
+        # Extract the response
+        full_response = sequences[0]["generated_text"]
+        
+        # Similar to the implementation in malay.py
+        if "Answer:" in full_response:
+            response = full_response.split("Answer:", 1)[1].strip()
+        else:
+            response = full_response.replace(text, "").strip()
+        
+        print(f"Mallam response generated in {elapsed_time:.2f} seconds: {response}")
+        return response
+        
+    except Exception as e:
+        print(f"Error generating Mallam response: {e}")
+        # Return the original text with an error message as fallback
+        return f"Saya tidak dapat memproses itu dengan baik. Ini adalah apa yang anda katakan: {text}"
+
+# Just for testing
+if __name__ == "__main__":
+    print("in main!")
+
+    pipeline = get_model()
+    prompt = "hari ini hari apa?"
+    response = generate_mallam_response(prompt)
+    print(f"\nPrompt: {prompt}")
+    print(f"Response: {response}")
+    print("Malay Text-to-Text conversion completed!")
