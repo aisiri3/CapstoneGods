@@ -83,7 +83,7 @@ export default function Chat({ onAvatarStateChange }) {
       // Clear chat completely when selection changes
       clearChat();
       
-      // Update avatar selection - use callback to ensure we're using the latest value
+      // Update avatar selection
       setAvatarSelection(event.detail);
       
       // Reset intro state to trigger new intro message

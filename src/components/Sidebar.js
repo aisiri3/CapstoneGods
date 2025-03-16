@@ -12,6 +12,7 @@ export default function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [user, setUser] = useState(null); // Store user data
+  const [isSending, setIsSending] = useState(false);
   
   // Default selections
   const defaultSelections = {
@@ -84,9 +85,36 @@ export default function Sidebar() {
       selections[key] !== lastSavedSelections[key]
     );
   };
+
+  // Function to send selections to the backend
+  const sendSelectionsToBackend = async (selections) => {
+    try {
+      setIsSending(true);
+      const response = await fetch('/api/send-selections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(selections),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to send selections to backend: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Backend response:', data);
+      return true;
+    } catch (error) {
+      console.error('Error sending selections to backend:', error);
+      return false;
+    } finally {
+      setIsSending(false);
+    }
+  };
   
   // Function to handle complete selection
-  const handleCompleteSelection = () => {
+  const handleCompleteSelection = async () => {
     // Check if any changes were made
     if (!hasSelectionChanged()) {
       alert("You have not made any changes yet!");
@@ -99,6 +127,9 @@ export default function Sidebar() {
     // Update last saved selections
     setLastSavedSelections({...selections});
     
+    // Send selections to backend
+    const success = await sendSelectionsToBackend(selections);
+    
     // Dispatch a custom event to notify other components about the selection change
     const event = new CustomEvent('avatarSelectionChanged', { 
       detail: { ...selections }
@@ -109,7 +140,12 @@ export default function Sidebar() {
     setOpenSubmenus({});
     
     // Provide feedback
-    alert("Your selection has been saved!");
+    if (success) {
+      alert("Your selection has been saved!");
+    } else {
+      // Even if backend fails, the frontend will still update
+      alert("Your selection has been saved locally, but there was an issue updating the backend.");
+    }
   };
 
   // Submenus items
@@ -210,8 +246,9 @@ export default function Sidebar() {
             <button 
               className="complete-selection-button"
               onClick={handleCompleteSelection}
+              disabled={isSending}
             >
-              Complete Selection
+              {isSending ? 'Saving...' : 'Complete Selection'}
             </button>
           )}
         </div>
