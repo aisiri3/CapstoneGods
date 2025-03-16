@@ -1,5 +1,5 @@
 """
-Malay Text-to-Speech (MALE VOICE)
+TEMPORARY FILE: SAME AS MALE VOICE
 """
 import torch
 from transformers import VitsModel, AutoTokenizer
