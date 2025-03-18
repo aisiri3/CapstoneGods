@@ -1,4 +1,4 @@
-# CapstoneGods
+# THIS IS THE BRANCH FOR WORKING CODE ON KLASS LAPTOP
 ## Set up Backend
 Go to the folder's directory, then 'cd backend' to go to the backend folder.
 First, we need to install [Rhubarb Lip-Sync](https://github.com/DanielSWolf/rhubarb-lip-sync/releases). Go to the link and download the correct zip file for your machine (e.g. if on Windows laptop, download Rhubarb-Lip-Sync-1.13.0-Windows.zip). 

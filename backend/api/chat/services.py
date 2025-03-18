@@ -3,6 +3,7 @@ Chat services with integrated language model generation and TTS.
 """
 from flask import current_app, session
 import time
+import re
 import os
 from pathlib import Path
 import base64
@@ -15,6 +16,8 @@ from workflows.tts.coqui import get_tts_model as get_english_tts_model
 from workflows.tts.coqui import tts_workflow as english_tts_workflow
 from workflows.tts.coqui import playback_speech
 from workflows.text_to_text.english import get_model as get_llama_model
+# from workflows.text_to_text.english import generate_response as generate_llama_response
+from workflows.text_to_text.english import remove_emojis
 
 # Import Malay workflows
 from workflows.tts.malay_male_tts import get_tts_model as get_malay_male_tts_model
@@ -67,31 +70,40 @@ def unload_models(except_language=None):
     if except_language != "English" and (loaded_models["english_tts"] or loaded_models["llama"]):
         print("Unloading English models...")
         if loaded_models["english_tts"]:
-            english_tts_model = None
+            del english_tts_model  # Delete the model reference explicitly
+            torch.cuda.empty_cache()  # Clear CUDA cache
+            gc.collect()  # Trigger garbage collection
             loaded_models["english_tts"] = False
         
         if loaded_models["llama"]:
-            llama_model = None
+            del llama_model  # Delete the model reference explicitly
+            torch.cuda.empty_cache()  # Clear CUDA cache
+            gc.collect()  # Trigger garbage collection
             loaded_models["llama"] = False
     
     # Unload Malay models if we're switching to English
     if except_language != "Malay" and (loaded_models["malay_male_tts"] or loaded_models["malay_female_tts"]):
         print("Unloading Malay models...")
         if loaded_models["malay_male_tts"]:
-            malay_male_tts_model = None
+            del malay_male_tts_model  # Delete the model reference explicitly
+            torch.cuda.empty_cache()  # Clear CUDA cache
+            gc.collect()  # Trigger garbage collection
             loaded_models["malay_male_tts"] = False
         
         if loaded_models["malay_female_tts"]:
-            malay_female_tts_model = None
+            del malay_female_tts_model  # Delete the model reference explicitly
+            torch.cuda.empty_cache()  # Clear CUDA cache
+            gc.collect()  # Trigger garbage collection
             loaded_models["malay_female_tts"] = False
     
-    # Force garbage collection to free memory
+    # Force garbage collection and clear memory
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     
     print("Model unloading complete")
     print(f"Current loaded models: {loaded_models}")
+
 
 def get_english_tts():
     """Lazy-load the English TTS model."""
@@ -129,37 +141,66 @@ def get_malay_female_tts():
         loaded_models["malay_female_tts"] = True
     return malay_female_tts_model
 
-def generate_llama_response(text):
+def generate_llama_response(prompt):
     """Generate a response using the Llama model."""
+    persona_intro = (
+        "You are a language learning assistant helping English speakers to learn and improve their English. "
+        "You provide explanations, examples, and suggestions to help users speak and understand English better. "
+        "You are friendly, patient, and encouraging in your responses. Keep your responses very short and sweet and concise. Keep to maximum of 3 lines."
+    )
+
+    modified_prompt = persona_intro + "\n" + prompt
+    start_time = time.time()
+
     try:
-        model = get_llama()
+        model = get_llama_model()
         
         # Measure response time
         start_time = time.time()
         
         # Generate response
         sequences = model(
-            text,
+            modified_prompt,
             do_sample=True,
             top_k=10,
             num_return_sequences=1,
             max_length=512,
+            truncation=True,
             temperature=0.7,
         )
         
         end_time = time.time()
         elapsed_time = end_time - start_time
         
-        # Extract and clean the response
-        response = sequences[0]["generated_text"]
-        
-        print(f"Llama response generated in {elapsed_time:.2f} seconds")
-        return response
+        full_response = sequences[0]["generated_text"]
+
+        # Strip persona intro, prompt, and "A: " anywhere in the response
+        answer_text = full_response.strip()
+
+        # Replace persona intro anywhere in the response
+        answer_text = answer_text.replace(persona_intro, "").strip()
+
+        # Replace prompt anywhere in the response
+        answer_text = answer_text.replace(prompt, "").strip()
+
+        # Replace "A: " anywhere in the response
+        answer_text = answer_text.replace("A: ", "").strip()
+
+        # Remove emojis from the response
+        answer_text = remove_emojis(answer_text)
+
+        print(f"Llama response generated in {elapsed_time:.2f} seconds: {answer_text}")
+        return answer_text
         
     except Exception as e:
         print(f"Error generating Llama response: {e}")
         # Return the original text with an error message as fallback
-        return f"I couldn't process that properly. Here's what you said: {text}"
+        return f"I couldn't process that properly. Here's what you said: {prompt}"
+        
+    except Exception as e:
+        print(f"Error generating Llama response: {e}")
+        # Return the original text with an error message as fallback
+        return f"I couldn't process that properly. Here's what you said: {prompt}"
 
 def save_avatar_selections(selections):
     """
@@ -236,6 +277,7 @@ def get_speaker_path(avatar_config=None):
     print(f"Using speaker path: {speaker_path} for gender={gender}, persona={persona}")
     return speaker_path
 
+# NO GPU ON KLASS LAPTOP SO NEED TO LOAD UNLOAD LOAD UNLOAD
 def process_speech(text, avatar_config=None):
     """
     Process speech from text input, using the appropriate model for text generation,
@@ -261,7 +303,10 @@ def process_speech(text, avatar_config=None):
             # Generate response using Llama
             response_text = generate_llama_response(text)
             
-            # Get TTS model
+            # Unload the Llama model after generating the response to free up GPU memory
+            unload_models(except_language="English")
+            
+            # Now load the TTS model (English XTTS) after unloading Llama
             model = get_english_tts()
             
             # Get appropriate speaker path based on avatar config
@@ -332,6 +377,104 @@ def process_speech(text, avatar_config=None):
             "audio_path": output_path,
             "mouth_cues": mouth_cues
         }
+
+
+# def process_speech(text, avatar_config=None):
+#     """
+#     Process speech from text input, using the appropriate model for text generation,
+#     TTS for audio generation, and Rhubarb for lipsync.
+    
+#     Args:
+#         text (str): The input text from the user
+#         avatar_config (dict, optional): Avatar configuration from frontend
+        
+#     Returns:
+#         dict: Contains the response text, audio file path, and lipsync data
+#     """
+#     # Use provided config or fallback to current selections
+#     config = avatar_config or current_avatar_selections
+#     language = config.get("language", "English")
+#     gender = config.get("gender", "Male")
+    
+#     output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
+    
+#     try:
+#         # Process based on language
+#         if language == "English":
+#             # Generate response using Llama
+#             response_text = generate_llama_response(text)
+            
+#             # Get TTS model
+#             model = get_english_tts()
+            
+#             # Get appropriate speaker path based on avatar config
+#             speaker_path = get_speaker_path(avatar_config)
+            
+#             # Convert response to speech
+#             english_tts_workflow(model, response_text, speaker_path, output_path)
+        
+#         else:  # Malay
+#             # Generate response using Mallam (direct call to module function)
+#             print("Generating Malay response using Mallam...")
+#             response_text = generate_mallam_response(text)
+            
+#             # Select the appropriate TTS model based on gender
+#             if gender == "Male":
+#                 model, tokenizer = get_malay_male_tts()
+#                 malay_male_tts_workflow(model, tokenizer, response_text, output_path)
+#             else:  # Female
+#                 model, tokenizer = get_malay_female_tts()
+#                 malay_female_tts_workflow(model, tokenizer, response_text, output_path)
+        
+#         # Generate lipsync data
+#         lipsync_data = generate_rhubarb_lipsync(output_path)
+        
+#         # Get just the mouth cues from the lipsync data
+#         mouth_cues = lipsync_data.get("mouthCues", [])
+        
+#         # Return all necessary data
+#         return {
+#             "response_text": response_text,
+#             "audio_path": output_path,
+#             "mouth_cues": mouth_cues
+#         }
+    
+#     except Exception as e:
+#         print(f"Error in process_speech: {e}")
+#         import traceback
+#         traceback.print_exc()
+        
+#         # Provide a fallback response
+#         fallback_response = "I'm sorry, but I'm having trouble processing your request right now."
+#         if language == "Malay":
+#             fallback_response = "Maaf, saya menghadapi masalah dalam memproses permintaan anda sekarang."
+        
+#         # Try to generate audio for the fallback response
+#         try:
+#             if language == "English":
+#                 model = get_english_tts()
+#                 speaker_path = get_speaker_path(avatar_config)
+#                 english_tts_workflow(model, fallback_response, speaker_path, output_path)
+#             else:  # Malay
+#                 if gender == "Male":
+#                     model, tokenizer = get_malay_male_tts()
+#                     malay_male_tts_workflow(model, tokenizer, fallback_response, output_path)
+#                 else:  # Female
+#                     model, tokenizer = get_malay_female_tts()
+#                     malay_female_tts_workflow(model, tokenizer, fallback_response, output_path)
+            
+#             # Generate lipsync data for fallback
+#             lipsync_data = generate_rhubarb_lipsync(output_path)
+#             mouth_cues = lipsync_data.get("mouthCues", [])
+#         except Exception as e2:
+#             print(f"Error generating fallback audio: {e2}")
+#             mouth_cues = []
+        
+#         return {
+#             "response_text": fallback_response,
+#             "audio_path": output_path,
+#             "mouth_cues": mouth_cues
+#         }
 
 def encode_audio_to_base64(audio_path):
     """Convert audio file to base64 for transmission to frontend."""

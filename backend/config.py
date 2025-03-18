@@ -9,8 +9,8 @@ class Config:
     # MySQL configurations
     MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
     MYSQL_USER = os.getenv('MYSQL_USER', 'root')
-    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'Capstone.12345')
-    MYSQL_DB = os.getenv('MYSQL_DB', 'capstoneDB')
+    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'Password01')
+    MYSQL_DB = os.getenv('MYSQL_DB', 'chatbot_eval')
     MYSQL_CHARSET = 'utf8mb4'
     
     # TTS model settings

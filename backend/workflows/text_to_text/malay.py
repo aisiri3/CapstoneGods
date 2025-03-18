@@ -88,24 +88,33 @@ def get_model():
                     low_cpu_mem_usage=True
                 )
             else:
-                # Use BitsAndBytes for quantization on non-Windows platforms
-                from transformers import BitsAndBytesConfig
+                # # Use BitsAndBytes for quantization on non-Windows platforms
+                # from transformers import BitsAndBytesConfig
                 
-                # 4-bit quantization config
-                quantization_config = BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_compute_dtype=torch.float16,
-                    bnb_4bit_quant_type="nf4",
-                    bnb_4bit_use_double_quant=True,
-                )
+                # # 4-bit quantization config
+                # quantization_config = BitsAndBytesConfig(
+                #     load_in_4bit=True,
+                #     bnb_4bit_compute_dtype=torch.float16,
+                #     bnb_4bit_quant_type="nf4",
+                #     bnb_4bit_use_double_quant=True,
+                # )
                 
-                # Load with disk offloading and quantization
+                # # Load with disk offloading and quantization
+                # model = AutoModelForCausalLM.from_pretrained(
+                #     "mesolitica/mallam-5B-4096",
+                #     device_map="auto",
+                #     quantization_config=quantization_config,
+                #     offload_folder="offload_malay",
+                #     offload_state_dict=True,
+                #     low_cpu_mem_usage=True
+                # )
+
+                print("NOT Running on Windows, using simplified model loading")
+                # Use a simpler approach without BitsAndBytes on Windows
                 model = AutoModelForCausalLM.from_pretrained(
                     "mesolitica/mallam-5B-4096",
                     device_map="auto",
-                    quantization_config=quantization_config,
-                    offload_folder="offload_malay",
-                    offload_state_dict=True,
+                    torch_dtype=torch.float16,
                     low_cpu_mem_usage=True
                 )
             
@@ -115,7 +124,8 @@ def get_model():
                 task="text-generation",
                 model=model,
                 tokenizer=tokenizer,
-                max_length=200
+                max_length=200, 
+                truncation=True
             )
             print("MaLLaM pipeline initialized!")
         return mallam_pipeline

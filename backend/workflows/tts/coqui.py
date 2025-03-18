@@ -22,7 +22,7 @@ def get_tts_model(device=device):
     # Override PyTorch default behavior to allow full model loading
     torch.load = lambda *args, **kwargs: torch._load(*args, weights_only=False, **kwargs)
 
-    tts.to(device)
+    tts.to("cpu")
     return tts
 
 
