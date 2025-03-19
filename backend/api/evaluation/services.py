@@ -4,6 +4,7 @@ Evaluation services.
 import os
 import subprocess
 import sys
+import platform
 from flask import current_app
 
 def start_evaluation_process():
@@ -11,9 +12,20 @@ def start_evaluation_process():
     print('Starting Python script...')
     
     try:
-        # Get the path to the virtual environment's Python interpreter
-        venv_python = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                'venv', 'Scripts', 'python.exe')
+        # Determine the Python executable to use based on the platform
+        if platform.system() == 'Windows':
+            # On Windows, try to use the virtual environment's Python
+            venv_python = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                                    'venv', 'Scripts', 'python.exe')
+            # Check if the file exists
+            if not os.path.exists(venv_python):
+                print(f"Virtual env Python not found at {venv_python}, using system Python")
+                venv_python = 'python'  # Fall back to system Python
+        else:
+            # On Linux/Mac, use python3
+            venv_python = 'python3'
+        
+        print(f"Using Python executable: {venv_python}")
         
         # Get database configuration
         db_config = {
@@ -35,7 +47,10 @@ def start_evaluation_process():
 
         # Run the evaluation script
         script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                  'workflows', 'llama', 'evaluation.py')
+                                  'workflows', 'chat_evaluation', 'evaluation.py')
+        
+        # Log the command we're about to run
+        print(f"Executing: {venv_python} {script_path}")
         
         process = subprocess.Popen(
             [venv_python, script_path], 
@@ -47,8 +62,15 @@ def start_evaluation_process():
         
         output, error = process.communicate()
         
+        if error:
+            print(f"Error from subprocess: {error}")
+        if output:
+            print(f"Output from subprocess: {output[:200]}...")  # Print first 200 chars of output
+            
         return output, error
 
     except Exception as e:
         print(f"Error in evaluation process: {e}")
+        import traceback
+        traceback.print_exc()  # Print the full stack trace for better debugging
         return None, str(e)

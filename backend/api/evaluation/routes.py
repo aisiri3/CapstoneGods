@@ -55,15 +55,42 @@ class StartEvaluation(Resource):
     def post(self):
         """Start the evaluation process."""
         try:
+            print("Starting evaluation process...")
+            
+            # Get the request data (if any)
+            request_data = request.get_json(silent=True) or {}
+            persona_id = request_data.get('personaId')
+            
+            if persona_id:
+                print(f"Received persona ID: {persona_id}")
+            
+            # Call the evaluation service
             output, error = start_evaluation_process()
             
+            # Check for errors in the evaluation process
             if error:
-                return jsonify({"error": "Evaluation failed", "details": error}), 500
+                print(f"Evaluation failed: {error}")
+                return {
+                    "success": False,
+                    "message": "Evaluation failed",
+                    "error": str(error)
+                }, 500
             
-            return jsonify({"message": "Evaluation completed successfully!", "data": output})
+            print("Evaluation completed successfully")
+            return {
+                "success": True,
+                "message": "Evaluation completed successfully"
+            }
             
         except Exception as e:
-            return jsonify({"error": "Server error", "details": str(e)}), 500
+            import traceback
+            print(f"Server error in StartEvaluation: {str(e)}")
+            print(traceback.format_exc())
+            return {
+                "success": False,
+                "message": "Server error",
+                "error": str(e)
+            }, 500
 
 def register_routes(api):
     """Register the evaluation routes with the API."""

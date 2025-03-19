@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 
 import {
   Chart as ChartJS,
-  LinearScale, // Import LinearScale
+  LinearScale,
   PointElement,
   LineElement,
   Tooltip as ChartTooltip,
@@ -31,100 +31,113 @@ export default function ChatbotEvaluationDashboard() {
     actualResponse: "",
     responseTime: 0,
     similarityScore: 0,
-    personaId: "", 
+    personaId: "", // Store the selected persona ID
   });
+  
+  // Added state to show feedback for operations
+  const [feedback, setFeedback] = useState({ message: '', type: '' });
+  const [selectedPersonaDescription, setSelectedPersonaDescription] = useState("");
 
   const [averageSimilarity, setAverageSimilarity] = useState(0);
   const [averageResponseTime, setAverageResponseTime] = useState(0);
 
   // Fetch entries and personas from the Next.js API route
   useEffect(() => {
-    const fetchPersonas = async () => {
-      try {
-        const response = await fetch('/api/personas');
-        
-        // Check if the response is OK before trying to parse JSON
-        if (!response.ok) {
-          // Try to get error details if available
-          let errorMessage = "Failed to fetch personas";
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } catch (e) {
-            // If JSON parsing fails, use the status text
-            errorMessage = `Failed to fetch personas: ${response.status} ${response.statusText}`;
-          }
-          throw new Error(errorMessage);
-        }
-        
-        // Only parse JSON if response was successful
-        const data = await response.json();
-        
-        // Map the data to ensure it has consistent field names
-        const mappedPersonas = data.map(persona => ({
-          // Ensure we have both id and persona_id for compatibility
-          id: persona.persona_id || persona.id,
-          persona_id: persona.persona_id || persona.id,
-          name: persona.name,
-          description: persona.persona_description || persona.description,
-          persona_description: persona.persona_description || persona.description
-        }));
-        
-        setPersonas(mappedPersonas);
-      } catch (error) {
-        console.error("Error fetching personas:", error);
-      }
-    };
-
-    const fetchEntries = async () => {
-      try {
-        const response = await fetch('/api/evaluation');
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to fetch entries");
-        }
-
-        setEntries(data);
-
-        // Filter out invalid or missing data
-        const validEntries = data.filter(
-          (entry) =>
-            !isNaN(entry.similarityScore) &&
-            entry.similarityScore !== null &&
-            entry.similarityScore !== undefined &&
-            !isNaN(entry.responseTime) &&
-            entry.responseTime !== null &&
-            entry.responseTime !== undefined
-        );
-
-        if (validEntries.length > 0) {
-          // Calculate averages
-          const totalSimilarity = validEntries.reduce(
-            (sum, entry) => sum + Number(entry.similarityScore),
-            0
-          );
-          const totalResponseTime = validEntries.reduce(
-            (sum, entry) => sum + Number(entry.responseTime),
-            0
-          );
-
-          const avgSimilarity = totalSimilarity / validEntries.length;
-          const avgResponseTime = totalResponseTime / validEntries.length;
-
-          setAverageSimilarity(avgSimilarity);
-          setAverageResponseTime(avgResponseTime);
-        } else {
-          console.warn("No valid entries to calculate averages.");
-        }
-      } catch (error) {
-        console.error("Error fetching entries:", error);
-      }
-    };
-
-    // Fetch both personas and entries
     fetchPersonas();
     fetchEntries();
   }, []);
+
+  // New function to fetch personas
+  const fetchPersonas = async () => {
+    try {
+      const response = await fetch('/api/personas');
+      
+      // Check if the response is OK before trying to parse JSON
+      if (!response.ok) {
+        // Try to get error details if available
+        let errorMessage = "Failed to fetch personas";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          // If JSON parsing fails, use the status text
+          errorMessage = `Failed to fetch personas: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      // Only parse JSON if response was successful
+      const data = await response.json();
+      
+      // Map the data to ensure it has consistent field names
+      const mappedPersonas = data.map(persona => ({
+        // Ensure we have both id and persona_id for compatibility
+        id: persona.persona_id || persona.id,
+        persona_id: persona.persona_id || persona.id,
+        name: persona.name,
+        description: persona.persona_description || persona.description,
+        persona_description: persona.persona_description || persona.description
+      }));
+      
+      setPersonas(mappedPersonas);
+    } catch (error) {
+      console.error("Error fetching personas:", error);
+      setFeedback({ 
+        message: `Error fetching personas: ${error.message}`, 
+        type: 'error' 
+      });
+    }
+  };
+
+  // Function to fetch entries
+  const fetchEntries = async () => {
+    try {
+      const response = await fetch('/api/evaluation');
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch entries");
+      }
+
+      setEntries(data);
+
+      // Filter out invalid or missing data
+      const validEntries = data.filter(
+        (entry) =>
+          !isNaN(entry.similarityScore) &&
+          entry.similarityScore !== null &&
+          entry.similarityScore !== undefined &&
+          !isNaN(entry.responseTime) &&
+          entry.responseTime !== null &&
+          entry.responseTime !== undefined
+      );
+
+      if (validEntries.length > 0) {
+        // Calculate averages
+        const totalSimilarity = validEntries.reduce(
+          (sum, entry) => sum + Number(entry.similarityScore),
+          0
+        );
+        const totalResponseTime = validEntries.reduce(
+          (sum, entry) => sum + Number(entry.responseTime),
+          0
+        );
+
+        const avgSimilarity = totalSimilarity / validEntries.length;
+        const avgResponseTime = totalResponseTime / validEntries.length;
+
+        setAverageSimilarity(avgSimilarity);
+        setAverageResponseTime(avgResponseTime);
+      } else {
+        console.warn("No valid entries to calculate averages.");
+      }
+    } catch (error) {
+      console.error("Error fetching entries:", error);
+      setFeedback({ 
+        message: `Error fetching entries: ${error.message}`, 
+        type: 'error' 
+      });
+    }
+  };
 
   const chartData = {
     datasets: [
@@ -147,7 +160,6 @@ export default function ChatbotEvaluationDashboard() {
           x: index,
           y: entry.responseTime,
           key: `response-time-${index}`,
-
         })),
         backgroundColor: "rgba(255, 99, 132, 1)",
         borderColor: "rgba(255, 99, 132, 0.2)",
@@ -165,7 +177,7 @@ export default function ChatbotEvaluationDashboard() {
         title: {
           display: true,
           text: "Prompt Index",
-          color: "rgba(75, 192, 192, 1)",  // light blue
+          color: "rgba(75, 192, 192, 1)",
         },
         ticks: {
           stepSize: 1,
@@ -218,17 +230,27 @@ export default function ChatbotEvaluationDashboard() {
       ...prev,
       [name]: name === "responseTime" || name === "similarityScore" ? Number(value) : value
     }));
+    
+    // If the persona changed, update the selected persona description
+    if (name === "personaId") {
+      const selectedPersona = personas.find(p => p.persona_id.toString() === value);
+      setSelectedPersonaDescription(
+        selectedPersona ? selectedPersona.persona_description : ""
+      );
+    }
   };
 
   const handleAddEntry = async () => {
     try {
-      // Fetch existing entries
-      const existingResponse = await fetch('/api/evaluation');
-      if (!existingResponse.ok) {
-        throw new Error("Failed to fetch existing entries");
+      // Validate entry has required fields
+      if (!newEntry.prompt || !newEntry.sampleResponse) {
+        setFeedback({
+          message: "Prompt and Sample Response are required fields",
+          type: "error"
+        });
+        return;
       }
-      const existingEntries = await existingResponse.json();
-  
+
       // Add new entry
       const response = await fetch('/api/evaluation', {
         method: 'POST',
@@ -243,8 +265,14 @@ export default function ChatbotEvaluationDashboard() {
         throw new Error(newData.message || "Failed to add entry");
       }
   
-      // Update state with both existing and new entries
-      setEntries([...existingEntries, newData]);
+      // Update state with new entry
+      setEntries(prev => [...prev, newData]);
+      
+      // Show success feedback
+      setFeedback({
+        message: "Entry added successfully",
+        type: "success"
+      });
       
       // Reset the form
       setNewEntry({
@@ -255,9 +283,18 @@ export default function ChatbotEvaluationDashboard() {
         similarityScore: 0,
         personaId: ""
       });
+      
+      // Clear feedback after 3 seconds
+      setTimeout(() => {
+        setFeedback({ message: '', type: '' });
+      }, 3000);
   
     } catch (error) {
       console.error("Error adding entry:", error);
+      setFeedback({
+        message: `Error adding entry: ${error.message}`,
+        type: "error"
+      });
     }
   };
   
@@ -268,34 +305,49 @@ export default function ChatbotEvaluationDashboard() {
   const handleStartEvaluation = async () => {
     try {
       alert('Evaluation has started!');
-  
+    
       const response = await fetch('/api/start-evaluation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        // Simplified request body with just the persona ID
+        body: JSON.stringify({ 
+          personaId: newEntry.personaId || null  // Handle case when no persona is selected
+        })
       });
-  
-      if (!response.ok) {
-        const errorText = await response.text(); // Get raw text response in case it's not JSON
-        throw new Error(`Failed to start evaluation: ${errorText}`);
+    
+      // First get the text response for debugging
+      const responseText = await response.text();
+      
+      let data;
+      try {
+        // Try to parse as JSON if possible
+        data = JSON.parse(responseText);
+      } catch (err) {
+        console.error("Failed to parse response as JSON:", responseText);
+        alert('Error: Server returned invalid response. See console for details.');
+        return;
       }
-  
-      const data = await response.json(); // Parse JSON after confirming it's valid
-      console.log("Evaluation Started:", data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Failed to start evaluation");
+      }
+    
+      console.log("Evaluation completed:", data);
       alert('Evaluation complete!');
-  
+    
       // Re-fetch entries to update the UI
       const updatedResponse = await fetch('/api/evaluation');
       if (!updatedResponse.ok) {
         throw new Error("Failed to fetch updated entries");
       }
-  
+    
       const updatedData = await updatedResponse.json();
       setEntries(updatedData);
     } catch (error) {
       console.error("Error starting evaluation:", error);
-      alert('There was an error starting the evaluation.');
+      alert('There was an error starting the evaluation: ' + error.message);
     }
   };
   
@@ -318,36 +370,75 @@ export default function ChatbotEvaluationDashboard() {
         sampleResponse: row.sample_answer || "",
         actualResponse: "",
         responseTime: 0,
-        similarityScore: row.similarityScore || 0
+        similarityScore: row.similarityScore || 0,
+        personaId: newEntry.personaId // Use currently selected persona
       }));
 
-      setEntries(newEntries);
-      console.log("New entries:", newEntries);
-
       // Send the entries to the backend to be saved in the database
-      newEntries.forEach(async (entry) => {
-        try {
-          const response = await fetch('/api/evaluation', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(entry),
-          });
+      let successCount = 0;
+      let failureCount = 0;
+      
+      const uploadEntries = async () => {
+        for (const entry of newEntries) {
+          try {
+            const response = await fetch('/api/evaluation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(entry),
+            });
 
-          const data = await response.json();
-          if (!response.ok) {
-            throw new Error(data.message || "Failed to add entry");
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.message || "Failed to add entry");
+            }
+            successCount++;
+          } catch (error) {
+            console.error("Error adding entry to database:", error);
+            failureCount++;
           }
-          console.log("Entry added to database:", data);
-        } catch (error) {
-          console.error("Error adding entry to database:", error);
         }
-      });
-
-      alert('File uploaded successfully!');
+        
+        // Update feedback with results
+        setFeedback({
+          message: `File processed: ${successCount} entries added, ${failureCount} failed`,
+          type: failureCount > 0 ? "warning" : "success"
+        });
+        
+        // Refresh entries
+        fetchEntries();
+      };
+      
+      uploadEntries();
     };
     reader.readAsBinaryString(file);
+  };
+
+  // Function to display selected persona details
+  const renderSelectedPersonaDetails = () => {
+    if (!newEntry.personaId) return null;
+    
+    const selectedPersona = personas.find(p => p.persona_id.toString() === newEntry.personaId);
+    if (!selectedPersona) return null;
+    
+    return (
+      <div className="mt-2 p-2 bg-gray-800 rounded">
+        <h3 className="text-sm font-bold text-cyan-400">Selected Persona:</h3>
+        <p className="text-xs text-gray-300 mt-1">{selectedPersona.description}</p>
+      </div>
+    );
+  };
+
+  // Feedback message styling based on type
+  const getFeedbackStyle = () => {
+    switch (feedback.type) {
+      case 'success': return 'bg-green-900 text-green-100';
+      case 'error': return 'bg-red-900 text-red-100';
+      case 'warning': return 'bg-yellow-900 text-yellow-100';
+      case 'info': return 'bg-blue-900 text-blue-100';
+      default: return 'bg-gray-900 text-gray-100';
+    }
   };
 
   return (
@@ -417,7 +508,7 @@ export default function ChatbotEvaluationDashboard() {
           />
         </div>
 
-        {/* Dropdown to select persona - MOVED FROM PERSONA EVALUATION */}
+        {/* Dropdown to select persona */}
         <div className="form-section">
           <label className="mt-4 form-label">Select Persona</label>
           <select
@@ -448,8 +539,15 @@ export default function ChatbotEvaluationDashboard() {
               </option>
             ))}
           </select>
+          
+          {/* Display selected persona description if any */}
+          {newEntry.personaId && (
+            <div className="mt-2 p-2 bg-gray-700 rounded text-xs">
+              <strong>Selected Persona:</strong> {personas.find(p => p.persona_id.toString() === newEntry.personaId.toString())?.name}
+            </div>
+          )}
         </div>
-  
+          
         {/* Form sections for input fields */}
         <div className="form-section">
           <label className="mt-4 form-label">Prompt</label>
