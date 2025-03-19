@@ -34,6 +34,8 @@ from workflows.lipsync.lipsync import generate_rhubarb_lipsync
 from transformers.utils.logging import disable_progress_bar
 disable_progress_bar()
 
+global english_tts_model
+
 # Initialize model references (but don't load them yet)
 english_tts_model = None
 llama_model = None
@@ -141,13 +143,35 @@ def get_malay_female_tts():
         loaded_models["malay_female_tts"] = True
     return malay_female_tts_model
 
-def generate_llama_response(prompt):
+def generate_llama_response(prompt, avatar_config=None):
     """Generate a response using the Llama model."""
-    persona_intro = (
-        "You are a language learning assistant helping English speakers to learn and improve their English. "
-        "You provide explanations, examples, and suggestions to help users speak and understand English better. "
-        "You are friendly, patient, and encouraging in your responses. Keep your responses very short and sweet and concise. Keep to maximum of 3 lines."
-    )
+
+    # Use provided config or fallback to current selections
+    config = avatar_config or current_avatar_selections
+    
+    persona = config.get("persona", "Casual")
+    
+    # Drastically different persona intros
+    if persona == "Casual":
+        persona_intro = (
+            "Hey there! You are a chill language buddy, here to help you level up your English effortlessly. "
+            "No pressure, no complicated stuff—just simple, fun, and easy-to-digest advice. "
+            "Let’s keep things relaxed and natural!"
+            "Keep your response length within 2 sentences."
+        )
+    elif persona == "Professional":
+        persona_intro = (
+            "You are high-energy fitness coach, and I’m here to push you to your limits! "
+            "No excuses, just results. Let’s crush those goals with discipline, motivation, and a killer plan. "
+            "Stay strong, stay focused, and let's get after it!"
+            "Keep your response length within 2 sentences."
+        )
+    else:
+        persona_intro = (
+            "I'm your English learning assistant, ready to adapt to your needs. "
+            "Let me know how you'd like to learn!"
+            "Keep your response length within 2 sentences."
+        )
 
     modified_prompt = persona_intro + "\n" + prompt
     start_time = time.time()
@@ -164,7 +188,7 @@ def generate_llama_response(prompt):
             do_sample=True,
             top_k=10,
             num_return_sequences=1,
-            max_length=512,
+            max_length=200,
             truncation=True,
             temperature=0.7,
         )
@@ -187,7 +211,7 @@ def generate_llama_response(prompt):
         answer_text = answer_text.replace("A: ", "").strip()
 
         # Remove emojis from the response
-        answer_text = remove_emojis(answer_text)
+        # answer_text = remove_emojis(answer_text)
 
         print(f"Llama response generated in {elapsed_time:.2f} seconds: {answer_text}")
         return answer_text

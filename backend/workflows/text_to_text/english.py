@@ -148,5 +148,5 @@ if __name__ == "__main__":
     print("hey Im running llama")
     llama_pipeline = get_model()
     prompt = "Hi there! What is the day today in Singapore?"
-    response = get_response(llama_pipeline, prompt)
+    response = generate_response(llama_pipeline, prompt)
     print(response)

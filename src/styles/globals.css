@@ -15,9 +15,9 @@
 body {
   font-family: Verdana, Geneva, Tahoma, sans-serif, sans-serif;
     /* TODO: change this/everything to a brighter color for bright mode */
-  background-color: #0a0a0a;
+  background-color: #161618;
   /* background-image: linear-gradient(to right, 0a0a0a, rgb(159, 117, 179)); */
-  color: #171717;
+  color: #ffffff;
   overflow: hidden;
 }
 
@@ -29,7 +29,7 @@ a {
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #141415;
+    background-color: #000000;
     color: #ededed;
   }
 }
