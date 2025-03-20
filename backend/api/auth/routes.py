@@ -68,8 +68,46 @@ class Login(Resource):
                 "email": user[2]
             }
         }, 200
+        
+class ChangePassword(Resource):
+    def post(self):
+        data = request.get_json()
+        user_id = data.get('user_id')
+        new_password = data.get('new_password')
+
+        if not user_id or not new_password:
+            return {"error": "Missing fields"}, 400
+
+        # Validate password
+        if not validate_password(new_password):
+            return {"error": "Password must be at least 8 characters"}, 400
+
+        # Hash the new password
+        hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        try:
+            # Update password in database
+            cur = mysql.connection.cursor()
+            cur.execute("UPDATE Users SET Password = %s WHERE UserID = %s", 
+                      (hashed_password, user_id))
+            
+            # Check if the update was successful (affected rows > 0)
+            if cur.rowcount == 0:
+                mysql.connection.rollback()
+                cur.close()
+                return {"error": "User not found"}, 404
+                
+            mysql.connection.commit()
+            cur.close()
+            
+            return {"message": "Password updated successfully"}, 200
+            
+        except Exception as e:
+            mysql.connection.rollback()
+            return {"error": f"Database error: {str(e)}"}, 500
 
 def register_routes(api):
     """Register the authentication routes with the API."""
     api.add_resource(Register, '/register')
     api.add_resource(Login, '/login')
+    api.add_resource(ChangePassword, '/change-password')

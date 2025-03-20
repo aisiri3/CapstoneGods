@@ -92,12 +92,23 @@ def generate_response(llama_pipeline, prompt, persona_description=None):
     start_time = time.time()
 
     try:
+        # sequences = llama_pipeline(
+        #     modified_prompt,
+        #     do_sample=True,
+        #     top_k=10,
+        #     num_return_sequences=1,
+        #     max_length=512,
+        #     temperature=0.7,
+        # )
+
+        # Generate response
         sequences = llama_pipeline(
             modified_prompt,
             do_sample=True,
             top_k=10,
             num_return_sequences=1,
-            max_length=512,
+            max_length=200,
+            truncation=True,
             temperature=0.7,
         )
 
@@ -120,6 +131,8 @@ def generate_response(llama_pipeline, prompt, persona_description=None):
 
         # Remove emojis from the response
         answer_text = remove_emojis(answer_text)
+
+        print("EVALUATION LLAMA RESPONSE: ", answer_text)
 
         return answer_text, elapsed_time
     except Exception as e:
