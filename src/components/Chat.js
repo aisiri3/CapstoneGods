@@ -11,6 +11,7 @@ export default function Chat({ onAvatarStateChange }) {
   const [currentAudioUrl, setCurrentAudioUrl] = useState(null);
   const [introPlayed, setIntroPlayed] = useState(false);
   const introDisplayedRef = useRef(false);
+  const [inputError, setInputError] = useState("");
   
   // Debug counter to track component renders
   const renderCountRef = useRef(0);
@@ -188,8 +189,28 @@ export default function Chat({ onAvatarStateChange }) {
     }
   };
 
+  // Function to validate the user input
+  const validateInput = (text) => {
+    // Check if input is empty or only contains whitespace
+    if (!text || text.trim() === '') {
+      return false;
+    }
+    
+    // Check if input contains at least one alphabetic character
+    return /[a-zA-Z]/.test(text);
+  };
+
   const sendMessage = async () => {
     const userMessage = inputFieldRef.current.value;
+    
+    // Clear any previous error messages
+    setInputError("");
+    
+    // Validate the input
+    if (!validateInput(userMessage)) {
+      setInputError("Please include some text in your message.");
+      return;
+    }
 
     if (userMessage && !isProcessing) {
       setIsProcessing(true);
@@ -285,6 +306,13 @@ export default function Chat({ onAvatarStateChange }) {
     }
   };
 
+  // Handle input changes to clear error when user types
+  const handleInputChange = () => {
+    if (inputError) {
+      setInputError("");
+    }
+  };
+
   // Clean up audio resources when component unmounts
   useEffect(() => {
     return () => {
@@ -302,6 +330,7 @@ export default function Chat({ onAvatarStateChange }) {
           ref={inputFieldRef}
           placeholder="Enter your message..."
           onKeyDown={(e) => e.key === "Enter" && !isProcessing && sendMessage()}
+          onChange={handleInputChange}
           disabled={isProcessing}
         />
         <button 
@@ -312,6 +341,11 @@ export default function Chat({ onAvatarStateChange }) {
           SEND
         </button>
       </div>
+      {inputError && (
+        <div className="inputErrorMessage">
+          {inputError}
+        </div>
+      )}
     </div>
   );
 }

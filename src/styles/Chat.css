@@ -118,3 +118,36 @@ button:hover:not(:disabled) {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Add this to your existing Chat.css */
+
+.inputErrorMessage {
+  color: #ff5555;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Existing styles for disabled button */
+.chatBox button:disabled {
+  background-image: none;
+  background-color: #888888;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+button:hover:not(:disabled) {
+  background-color: #200a50;
+}
+
+/* Styling for disabled input */
+.userInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
