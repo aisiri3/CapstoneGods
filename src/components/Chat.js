@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { FaSpinner } from "react-icons/fa";
 import "@/styles/Chat.css";
 
 export default function Chat({ onAvatarStateChange }) {
@@ -199,6 +200,17 @@ export default function Chat({ onAvatarStateChange }) {
       userDiv.innerText = userMessage;
       conversationBoxRef.current.prepend(userDiv);
       
+      // Create loading spinner element
+      const loadingDiv = document.createElement("div");
+      loadingDiv.className = "outputMessage loadingMessage";
+      
+      // Create a span with CSS-only spinner
+      const spinnerSpan = document.createElement("span");
+      spinnerSpan.className = "spinner";
+      
+      loadingDiv.appendChild(spinnerSpan);
+      conversationBoxRef.current.prepend(loadingDiv);
+      
       // Clear input field
       inputFieldRef.current.value = "";
 
@@ -224,6 +236,11 @@ export default function Chat({ onAvatarStateChange }) {
           audioAvailable: !!data.audio,
           mouthCuesLength: data.mouthCues ? data.mouthCues.length : 0
         });
+
+        // Remove loading message
+        if (conversationBoxRef.current.firstChild && conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
+          conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
+        }
 
         // Display bot's response in chat
         const botDiv = document.createElement("div");
@@ -251,6 +268,12 @@ export default function Chat({ onAvatarStateChange }) {
         conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
       } catch (error) {
         console.error("Error processing message:", error);
+        
+        // Remove loading message
+        if (conversationBoxRef.current.firstChild && conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
+          conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
+        }
+        
         // Display error message
         const errorDiv = document.createElement("div");
         errorDiv.className = "errorMessage";
@@ -286,7 +309,7 @@ export default function Chat({ onAvatarStateChange }) {
           onClick={sendMessage}
           disabled={isProcessing}
         >
-          {isProcessing ? '......' : 'SEND'}
+          SEND
         </button>
       </div>
     </div>

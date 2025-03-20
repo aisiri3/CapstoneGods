@@ -38,7 +38,7 @@ On the frontend, first make sure Node.js (v23.7.0) and Next.js (15) installed on
 Then run:
 ```
 npm install
-npm install tailwindcss @tailwindcss/vite @react-three/fiber @react-three/drei 
+npm install tailwindcss react-icons react-spinners @tailwindcss/vite @react-three/fiber @react-three/drei 
 ```
 
 To run the UI, open a separate terminal window and run:
