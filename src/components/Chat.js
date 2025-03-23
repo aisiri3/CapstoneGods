@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { FaSpinner } from "react-icons/fa";
+import useFillerManager from "./FillerManager";
 import "@/styles/Chat.css";
 
 export default function Chat({ onAvatarStateChange }) {
@@ -23,6 +23,9 @@ export default function Chat({ onAvatarStateChange }) {
     language: "English"
   });
 
+  // Initialize the filler manager with our avatar state callback
+  const fillerManager = useFillerManager(onAvatarStateChange);
+  
   // Define intro messages based on language and persona
   const introMessages = {
     English: {
@@ -35,11 +38,14 @@ export default function Chat({ onAvatarStateChange }) {
     }
   };
 
+  // Update fillerManager's processing state when isProcessing changes
+  useEffect(() => {
+    fillerManager.setIsProcessing(isProcessing);
+  }, [isProcessing, fillerManager]);
+
   // Debug: Track renders
   useEffect(() => {
     renderCountRef.current++;
-    console.log(`Chat component rendered (${renderCountRef.current}) with selection:`, 
-                avatarSelection.language, avatarSelection.persona);
   });
 
   // Get intro message based on current selection
@@ -50,7 +56,6 @@ export default function Chat({ onAvatarStateChange }) {
     const formalKey = persona === "Professional" ? "Formal" : "Casual";
     const message = introMessages[language]?.[formalKey] || introMessages.English.Casual;
     
-    console.log(`Selected intro message: "${message}"`);
     return message;
   };
 
@@ -74,6 +79,7 @@ export default function Chat({ onAvatarStateChange }) {
       while (conversationBoxRef.current.firstChild) {
         conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
       }
+      console.log("Chat messages cleared");
     }
   };
 
@@ -85,12 +91,15 @@ export default function Chat({ onAvatarStateChange }) {
       // Clear chat completely when selection changes
       clearChat();
       
-      // Update avatar selection
+      // Update avatar selection - use the exact event detail to maintain original behavior
       setAvatarSelection(event.detail);
       
       // Reset intro state to trigger new intro message
       setIntroPlayed(false);
       introDisplayedRef.current = false;
+      
+      // Stop any current fillers
+      fillerManager.stopAllFillers();
     };
 
     window.addEventListener('avatarSelectionChanged', handleSelectionChange);
@@ -98,19 +107,26 @@ export default function Chat({ onAvatarStateChange }) {
     return () => {
       window.removeEventListener('avatarSelectionChanged', handleSelectionChange);
     };
-  }, []);
+  }, [fillerManager]);
+
+  // Load fillers when avatar selection changes
+  useEffect(() => {
+    fillerManager.loadFillerData(avatarSelection).catch(err => {
+      console.error("Error loading fillers after selection change:", err);
+    });
+  }, [avatarSelection, fillerManager]);
 
   // Function to display the intro message in the chatbox
   const displayIntroMessage = () => {
     if (!conversationBoxRef.current || introDisplayedRef.current) {
+      console.log("Skipping intro display: already displayed or no conversation box");
       return;
     }
     
     // Mark as displayed immediately to prevent duplicate displays
     introDisplayedRef.current = true;
     
-    // Get the intro message AFTER the state has been updated
-    // This ensures we're using the current avatar selection
+    // Get the intro message
     const introMessage = getIntroMessage();
     
     console.log(`Displaying intro message: "${introMessage}" for ${avatarSelection.language}, ${avatarSelection.persona}`);
@@ -122,8 +138,6 @@ export default function Chat({ onAvatarStateChange }) {
     conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
   };
 
-  // Use separate effects for better control
-  
   // First effect: Clear flags when selection changes
   useEffect(() => {
     console.log("Avatar selection changed to:", avatarSelection);
@@ -140,6 +154,7 @@ export default function Chat({ onAvatarStateChange }) {
   useEffect(() => {
     if (!introPlayed) {
       console.log("Intro not played yet, scheduling display...");
+      console.log("Current avatar selection for intro:", JSON.stringify(avatarSelection));
       
       // Use a small delay to ensure state has been updated properly
       const timer = setTimeout(() => {
@@ -154,14 +169,19 @@ export default function Chat({ onAvatarStateChange }) {
 
   // Initialize on mount
   useEffect(() => {
-    console.log("Chat component mounted");
     introDisplayedRef.current = false;
     setIntroPlayed(false);
     
+    // Load fillers when component mounts
+    fillerManager.loadFillerData(avatarSelection).catch(err => {
+      console.error("Error loading initial fillers:", err);
+    });
+    
     return () => {
+      console.log("Chat component unmounting - cleaning up resources");
       cleanupPreviousAudio();
     };
-  }, []);
+  }, []); // Empty dependency array - only runs once
 
   // Function to convert base64 to blob URL
   const createAudioBlobUrl = (base64AudioData) => {
@@ -213,6 +233,7 @@ export default function Chat({ onAvatarStateChange }) {
     }
 
     if (userMessage && !isProcessing) {
+      // Set processing state
       setIsProcessing(true);
       
       // Display user's message in chat
@@ -237,27 +258,46 @@ export default function Chat({ onAvatarStateChange }) {
 
       // Scroll to bottom to show the latest message
       conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
+      
+      // Start playing fillers while waiting for the response
+      fillerManager.startFillers();
 
       try {
-        // Send message to server and handle the response
+        // Send message to server and get response
         const response = await fetch('/api/speak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             text: userMessage,
-            avatarConfig: avatarSelection // Send current avatar config to backend
+            avatarConfig: avatarSelection
           })
         });
 
         const data = await response.json();
         
-        // Log the received data for debugging
-        console.log("CHAT.JS: Received data from backend:", {
+        // Log the received data
+        console.log("Received data from backend:", {
           responseTextLength: data.response ? data.response.length : 0,
           audioAvailable: !!data.audio,
           mouthCuesLength: data.mouthCues ? data.mouthCues.length : 0
         });
-
+        
+        // Prepare the audio URL
+        cleanupPreviousAudio();
+        const audioUrl = createAudioBlobUrl(data.audio);
+        setCurrentAudioUrl(audioUrl);
+        
+        // Create response data object
+        const responseData = {
+          lipSync: data.mouthCues,
+          audioUrl: audioUrl,
+          response: data.response,
+          isFiller: false
+        };
+        
+        // Signal that processing is done
+        setIsProcessing(false);
+        
         // Remove loading message
         if (conversationBoxRef.current.firstChild && conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
           conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
@@ -268,27 +308,17 @@ export default function Chat({ onAvatarStateChange }) {
         botDiv.className = "outputMessage";
         botDiv.innerText = data.response;
         conversationBoxRef.current.prepend(botDiv);
-
-        // Clean up previous audio if any
-        cleanupPreviousAudio();
         
-        // Create a blob URL from the base64 audio
-        const audioUrl = createAudioBlobUrl(data.audio);
-        setCurrentAudioUrl(audioUrl);
-        
-        // Update the parent component with lipsync data and audio URL
-        if (onAvatarStateChange && typeof onAvatarStateChange === 'function') {
-          onAvatarStateChange({
-            lipSync: data.mouthCues,
-            audioUrl: audioUrl,
-            response: data.response
-          });
-        }
+        // Queue the response - the filler manager will handle the transition
+        fillerManager.queueResponse(responseData);
 
         // Scroll to bottom again
         conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
       } catch (error) {
         console.error("Error processing message:", error);
+        
+        // Stop playing fillers
+        await fillerManager.stopAllFillers();
         
         // Remove loading message
         if (conversationBoxRef.current.firstChild && conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
@@ -300,7 +330,8 @@ export default function Chat({ onAvatarStateChange }) {
         errorDiv.className = "errorMessage";
         errorDiv.innerText = "Sorry, there was an error processing your message.";
         conversationBoxRef.current.prepend(errorDiv);
-      } finally {
+        
+        // Set processing to false
         setIsProcessing(false);
       }
     }

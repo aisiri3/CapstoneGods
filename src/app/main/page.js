@@ -10,7 +10,9 @@ import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 // import avatars (casual & professional)
+// Make sure these imports match your export style (default exports or named exports)
 import { Ahmad } from "@/components/avatar-components/ahmadAvatar";
+// Fix this import to match your export style
 import { AhmadFormal } from '@/components/avatar-components/ahmadFormalAvatar';
 import { Lana } from "@/components/avatar-components/lanaAvatar";
 import { LanaFormal } from '@/components/avatar-components/lanaFormalAvatar';
@@ -24,7 +26,8 @@ export default function MainPage() {
   const [avatarState, setAvatarState] = useState({
     lipSync: null,
     audioUrl: null,
-    response: ""
+    response: "",
+    isFiller: false
   });
 
   // State to store current avatar selection
@@ -58,24 +61,57 @@ export default function MainPage() {
     console.log("Main page received avatar update:", {
       lipSyncAvailable: !!data.lipSync,
       audioUrlAvailable: !!data.audioUrl,
-      responseLength: data.response ? data.response.length : 0
+      responseLength: data.response ? data.response.length : 0,
+      isFiller: !!data.isFiller
     });
     
-    // Store a reference to the audio URL for cleanup
-    if (data.audioUrl && activeAudioRef.current) {
-      URL.revokeObjectURL(activeAudioRef.current);
+    // If this is response audio (not a filler), make sure to clean up first
+    if (!data.isFiller && data.audioUrl) {
+      // Clean up any existing audio URLs
+      if (activeAudioRef.current) {
+        console.log("Cleaning up previous audio before response");
+        URL.revokeObjectURL(activeAudioRef.current);
+        activeAudioRef.current = null;
+      }
+      
+      // Add a small delay before setting the new audio to ensure the avatar is ready
+      setTimeout(() => {
+        console.log("Setting response audio after delay");
+        setAvatarState({
+          lipSync: data.lipSync,
+          audioUrl: data.audioUrl,
+          response: data.response || "",
+          isFiller: false
+        });
+      }, 100);
+      
+      // Store a reference to the audio URL for later cleanup
+      if (data.audioUrl.startsWith('blob:')) {
+        activeAudioRef.current = data.audioUrl;
+      }
+    } else if (data.audioUrl === null && data.lipSync === null) {
+      // This is a reset signal
+      console.log("Received reset signal");
+      setAvatarState({
+        lipSync: null,
+        audioUrl: null,
+        response: "",
+        isFiller: false
+      });
+    } else {
+      // For fillers, update immediately
+      setAvatarState({
+        lipSync: data.lipSync,
+        audioUrl: data.audioUrl,
+        response: data.response || "",
+        isFiller: !!data.isFiller
+      });
     }
-    
-    if (data.audioUrl) {
-      activeAudioRef.current = data.audioUrl;
-    }
-    
-    setAvatarState(data);
   };
 
   // Function to clean up audio resources
   const cleanupAudioResources = () => {
-    if (activeAudioRef.current) {
+    if (activeAudioRef.current && activeAudioRef.current.startsWith('blob:')) {
       console.log("Cleaning up audio URL:", activeAudioRef.current);
       URL.revokeObjectURL(activeAudioRef.current);
       activeAudioRef.current = null;
@@ -112,7 +148,8 @@ export default function MainPage() {
       setAvatarState({
         lipSync: null,
         audioUrl: null,
-        response: ""
+        response: "",
+        isFiller: false
       });
       
       // Update selection
@@ -184,13 +221,13 @@ export default function MainPage() {
   const getAvatarPosition = () => {
     if (avatarSelection.persona === "Casual") {
       return {
-        position: [-0.6, -3.05, 5],
+        position: [-0.55, -3.05, 5],
         rotation: [0, Math.PI * 0.06, 0],
         scale: 2
       };
     } else { // Professional
       return {
-        position: [-0.6, -3.05, 5],
+        position: [-0.55, -3.05, 5],
         rotation: [0, Math.PI * 0.06, 0],
         scale: 2
       };
@@ -258,6 +295,7 @@ export default function MainPage() {
               position={avatarProps.position}
               rotation={avatarProps.rotation}
               scale={avatarProps.scale}
+              isFiller={avatarState.isFiller}
             />
           </Canvas>
         </div>
