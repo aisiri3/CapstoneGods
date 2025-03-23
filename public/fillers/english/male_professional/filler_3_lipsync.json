@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "soundFile": "/Users/natalie_1/Desktop/MAC-final-webapp/backend/outputs/filler_3.wav",
+    "duration": 1.38
+  },
+  "mouthCues": [
+    { "start": 0.00, "end": 0.03, "value": "X" },
+    { "start": 0.03, "end": 0.08, "value": "B" },
+    { "start": 0.08, "end": 0.12, "value": "E" },
+    { "start": 0.12, "end": 0.26, "value": "B" },
+    { "start": 0.26, "end": 0.33, "value": "G" },
+    { "start": 0.33, "end": 0.47, "value": "E" },
+    { "start": 0.47, "end": 0.68, "value": "C" },
+    { "start": 0.68, "end": 0.75, "value": "E" },
+    { "start": 0.75, "end": 1.38, "value": "X" }
+  ]
+}
