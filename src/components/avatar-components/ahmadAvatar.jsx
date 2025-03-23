@@ -4,7 +4,7 @@ import { useAnimations, useFBX, useGLTF } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
 import { LipSyncController } from './lipsyncController'
 
-export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
+export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale, isFiller }) {
   const headMeshRef = useRef();
   const audioRef = useRef(null);
   const { scene } = useGLTF('/avatars/HeyAhmad.glb')
@@ -46,6 +46,21 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
   idleAnimation[0].name = "Idle"
   talkingAnimation[0].name = "Talking"
   wavingAnimation[0].name = "Waving"
+
+  // Cleanup function for audio resources
+  const cleanupAudio = () => {
+    if (audioRef.current) {
+      console.log("Avatar cleaning up audio resources");
+      audioRef.current.pause();
+      audioRef.current.onplay = null;
+      audioRef.current.onended = null;
+      audioRef.current.onpause = null;
+      audioRef.current.onerror = null;
+      audioRef.current.oncanplay = null;
+      audioRef.current.onloadedmetadata = null;
+      audioRef.current = null;
+    }
+  };
 
   // default facial animations
   useEffect(() => {
@@ -136,7 +151,6 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
       };
       
       introAudio.onpause = () => {
-        console.log("Intro audio playback paused");
         setIsPlaying(false);
         setAnimation("Idle");
       };
@@ -157,52 +171,73 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale }) {
     }
   }, [isInitialized, introLipSyncData, activeAudio]);
 
-  // Handle playing response audio when provided
+  // Handle playing response or filler audio when provided
   useEffect(() => {
-    if (audioUrl && activeAudio === 'response') {
-      console.log("Setting up response audio with URL:", audioUrl);
-      
-      // Create new audio element for response
-      const responseAudio = new Audio();
-      audioRef.current = responseAudio;
-      
-      // Set up new audio
-      responseAudio.src = audioUrl;
-      
-      // Event handlers
-      responseAudio.onplay = () => {
-        console.log("Response audio playback started");
-        setIsPlaying(true);
-        setActiveLipSync(lipSyncData);
-        setAnimation("Talking");
-      };
-      
-      responseAudio.onended = () => {
-        console.log("Response audio playback ended");
-        setIsPlaying(false);
-        setAnimation("Idle");
-      };
-      
-      responseAudio.onpause = () => {
-        console.log("Response audio playback paused");
-        setIsPlaying(false);
-        setAnimation("Idle");
-      };
-      
-      // Start playing the audio
-      responseAudio.play().catch(err => {
-        console.error("Error playing response audio:", err);
-      });
-      
-      // Cleanup function
-      return () => {
-        responseAudio.pause();
-        responseAudio.onplay = null;
-        responseAudio.onended = null;
-        responseAudio.onpause = null;
-      };
+    if (!audioUrl) return;
+
+    // Always clean up previous audio
+    cleanupAudio();
+    
+    // Determine if we're handling a filler or a response
+    const audioType = isFiller ? 'filler' : 'response';
+    console.log(`Processing ${audioType} audio with URL:`, audioUrl);
+    
+    // Skip if we're still in intro mode and this isn't a filler
+    if (activeAudio === 'intro' && !isFiller) {
+      console.log("Still in intro mode, ignoring non-filler audio");
+      return;
     }
-  }, [audioUrl, activeAudio, lipSyncData]);
+    
+    // Create new audio element
+    const audio = new Audio();
+    audioRef.current = audio;
+    
+    // Set up new audio
+    audio.src = audioUrl;
+    
+    // Event handlers
+    audio.onplay = () => {
+      console.log(`${audioType} audio playback started`);
+      setIsPlaying(true);
+      setActiveLipSync(lipSyncData);
+      setAnimation("Talking");
+    };
+    
+    audio.onended = () => {
+      console.log(`${audioType} audio playback ended`);
+      setIsPlaying(false);
+      setAnimation("Idle");
+      
+      // Only update activeAudio if this was intro audio
+      if (activeAudio === 'intro') {
+        setActiveAudio('response');
+      }
+    };
+    
+    audio.onpause = () => {
+      setIsPlaying(false);
+      setAnimation("Idle");
+    };
+    
+    // Start playing the audio with a small delay
+    setTimeout(() => {
+      if (audioRef.current === audio) { // Only play if it's still the current audio
+        audio.play().catch(err => {
+          console.error(`Error playing ${audioType} audio:`, err);
+        });
+      }
+    }, 100);
+    
+    // Cleanup function
+    return () => {
+      if (audioRef.current === audio) {
+        audio.pause();
+        audio.onplay = null;
+        audio.onended = null;
+        audio.onpause = null;
+      }
+    };
+  }, [audioUrl, lipSyncData, isFiller, activeAudio]);
 
   // Handle animation transitions
   useEffect(() => {
