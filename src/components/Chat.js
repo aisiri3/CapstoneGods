@@ -29,8 +29,8 @@ export default function Chat({ onAvatarStateChange }) {
   // Define intro messages based on language and persona
   const introMessages = {
     English: {
-      Formal: "Nice to meet you! Shall we have a formal discussion?",
-      Casual: "Hello, let's have a simple, casual conversation."
+      Formal: "Hello! I’m here to assist you in your language learning journey. Please feel free to ask me anything in the format of “How can I…” For instance, you might ask, “How can I ask someone for the project update?” and I’ll provide you with helpful guidance. Let’s begin!",
+      Casual: "Hey there! I'm here to help you with your language learning journey. Feel free to ask me anything in the format of 'How can I...' For example, you can ask 'How can I order coffee?' and I'll provide you with the answer. Let's get started!"
     },
     Malay: {
       Formal: "To be confirmed: Malay formal intro.",

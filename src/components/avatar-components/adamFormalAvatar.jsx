@@ -34,7 +34,7 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
-    fetch('/intros/male-casual-intro.json')
+    fetch('/intros/male-professional-intro.json')
       .then(response => response.json())
       .then(data => {
         console.log("Loaded intro lipsync data:", data.mouthCues.length, "mouth cues");
@@ -213,7 +213,7 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
       console.log("Playing intro audio");
       
       // Create audio element for intro
-      const introAudio = new Audio('/intros/male-casual-intro.wav');
+      const introAudio = new Audio('/intros/male-professional-intro.wav');
       audioRef.current = introAudio;
       
       // Set up event handlers
