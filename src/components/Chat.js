@@ -33,8 +33,8 @@ export default function Chat({ onAvatarStateChange }) {
       Casual: "Hey there! I'm here to help you with your language learning journey. Feel free to ask me anything in the format of 'How can I...' For example, you can ask 'How can I order coffee?' and I'll provide you with the answer. Let's get started!"
     },
     Malay: {
-      Formal: "To be confirmed: Malay formal intro.",
-      Casual: "To be confirmed: Malay casual intro."
+      Formal: "Helo! Saya di sini untuk membantu anda dalam perjalanan pembelajaran bahasa anda. Jangan segan untuk bertanya apa sahaja dalam format “Bagaimana saya boleh…” Sebagai contoh, anda mungkin bertanya, “Bagaimana saya boleh meminta kemas kini projek daripada seseorang?” dan saya akan memberikan panduan yang berguna. Mari kita mulakan!",
+      Casual: "Hai! Saya di sini untuk membantu anda dalam perjalanan pembelajaran bahasa anda. Jangan ragu untuk bertanya apa sahaja dalam format “Bagaimana saya boleh…” Sebagai contoh, anda boleh bertanya “Bagaimana saya boleh memesan kopi?” dan saya akan memberikan jawapannya. Jom mulakan!"
     }
   };
 

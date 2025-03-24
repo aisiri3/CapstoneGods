@@ -22,7 +22,7 @@ export function AhmadFormal({ lipSyncData, audioUrl, position, rotation, scale, 
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
-    fetch('/intros/male-casual-intro.json')
+    fetch('/intros/malay-male-professional-intro.json')
       .then(response => response.json())
       .then(data => {
         console.log("Loaded intro lipsync data:", data.mouthCues.length, "mouth cues");
@@ -129,7 +129,7 @@ export function AhmadFormal({ lipSyncData, audioUrl, position, rotation, scale, 
       console.log("Playing intro audio");
       
       // Create audio element for intro
-      const introAudio = new Audio('/intros/male-casual-intro.wav');
+      const introAudio = new Audio('/intros/malay-male-professional-intro.wav');
       audioRef.current = introAudio;
       
       // Set up event handlers
@@ -165,6 +165,25 @@ export function AhmadFormal({ lipSyncData, audioUrl, position, rotation, scale, 
       };
     }
   }, [isInitialized, introLipSyncData, activeAudio]);
+
+  // Handle animation transitions
+  useEffect(() => {
+    if (actions && actions[animation]) {
+      console.log(`Switching to animation: ${animation}`);
+      
+      // Fade out any currently running animations
+      Object.values(actions).forEach(action => {
+        if (action.isRunning()) {
+          action.fadeOut(0.5);
+          // action.reset();
+        }
+      });
+
+      // Play the new animation
+      actions[animation].fadeIn(0.4).play();
+      // actions[animation].reset();
+    }
+  }, [animation, actions]);
 
   // Handle playing response or filler audio when provided
   useEffect(() => {

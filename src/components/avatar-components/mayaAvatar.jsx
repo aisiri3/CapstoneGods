@@ -28,7 +28,7 @@ export function Maya({ lipSyncData, audioUrl, position, rotation, scale, isFille
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
-    fetch('/intros/female-casual-intro.json')
+    fetch('/intros/malay-female-casual-intro.json')
       .then(response => response.json())
       .then(data => {
         console.log("Loaded intro lipsync data:", data.mouthCues.length, "mouth cues");
@@ -143,7 +143,7 @@ export function Maya({ lipSyncData, audioUrl, position, rotation, scale, isFille
       console.log("Playing intro audio");
       
       // Create audio element for intro
-      const introAudio = new Audio('/intros/female-casual-intro.wav');
+      const introAudio = new Audio('/intros/malay-female-casual-intro.wav');
       audioRef.current = introAudio;
       
       // Set up event handlers

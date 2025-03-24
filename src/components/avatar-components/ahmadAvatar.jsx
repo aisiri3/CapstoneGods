@@ -26,7 +26,7 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale, isFill
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
-    fetch('/intros/male-casual-intro.json')
+    fetch('/intros/malay-male-casual-intro.json')
       .then(response => response.json())
       .then(data => {
         console.log("Loaded intro lipsync data:", data.mouthCues.length, "mouth cues");
@@ -133,7 +133,7 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale, isFill
       console.log("Playing intro audio");
       
       // Create audio element for intro
-      const introAudio = new Audio('/intros/male-casual-intro.wav');
+      const introAudio = new Audio('/intros/malay-male-casual-intro.wav');
       audioRef.current = introAudio;
       
       // Set up event handlers
