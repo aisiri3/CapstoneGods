@@ -14,8 +14,8 @@ import * as THREE from "three";
 import { Ahmad } from "@/components/avatar-components/ahmadAvatar";
 // Fix this import to match your export style
 import { AhmadFormal } from '@/components/avatar-components/ahmadFormalAvatar';
-import { Lana } from "@/components/avatar-components/lanaAvatar";
-import { LanaFormal } from '@/components/avatar-components/lanaFormalAvatar';
+import { Lana2Formal } from '@/components/avatar-components/LanaFormal2Avatar';
+import { Lana2Avatar } from '@/components/avatar-components/Lana2Avatar';
 import { Adam } from "@/components/avatar-components/adamAvatar";
 import { AdamFormal } from '@/components/avatar-components/adamFormalAvatar';
 import { Maya } from '@/components/avatar-components/mayaAvatar';
@@ -200,9 +200,9 @@ export default function MainPage() {
     } else { // Female
       if (language === "English") {
         if (persona === "Casual") {
-          return Lana;
+          return Lana2Avatar;
         } else { // Professional
-          return LanaFormal;
+          return Lana2Formal;
         }
       } else { // Malay
         if (persona === "Casual") {
@@ -279,11 +279,11 @@ export default function MainPage() {
               enablePan={false} // Also disable panning
               enableRotate={false} // Disable rotation
             />
-            <ambientLight intensity={0.8} />
+            <ambientLight intensity={1} />
             <directionalLight 
               castShadow
-              position={[10, 10, 5]} 
-              intensity={1.5} 
+              position={[5, 4, 10]} 
+              intensity={1.8} 
             />
             
             {/* Dynamic avatar component based on selection */}
