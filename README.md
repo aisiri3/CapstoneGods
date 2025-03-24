@@ -14,7 +14,7 @@ python3.9 -m venv venv
 source venv/bin/activate
 
 # for Windows
-venv2/Scripts/activate
+venv/Scripts/activate
 ```
 
 In the virtual environment, install required dependencies:
@@ -31,6 +31,27 @@ To run the backend server:
 ``` 
 python app.py 
 ```
+
+## Setting up Malay virtual environment
+Due to dependency conflicts, you are required to create a second virtual environment in the backend folder to run the mesolitica Malay TTS models.
+```
+cd backend
+python3.9 -m venv venv-malay
+
+# for MacOS
+source venv-malay/bin/activate
+
+# for Windows
+venv-malay/Scripts/activate
+```
+**NOTE!** You strictly need to name this virtual environment venv-malay as we are calling the virtual environment directly in the code.
+
+You are also required to install a **separate set of requirements** in this new virtual environment:
+```
+# with venv-malay activated:
+pip install -r malay_requirements.txt
+```
+
 
 ## Set up Frontend
 On the frontend, first make sure Node.js (v23.7.0) and Next.js (15) installed on your machine.

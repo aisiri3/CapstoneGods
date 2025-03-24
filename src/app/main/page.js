@@ -260,6 +260,7 @@ export default function MainPage() {
           autoPlay 
           loop 
           muted
+          disablePictureInPicture
           ref={videoRef}
         >
           <source src={getBackgroundVideo()} type="video/mp4" />

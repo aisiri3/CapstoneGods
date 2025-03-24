@@ -4,6 +4,7 @@ Chat services with integrated language model generation and TTS.
 from flask import current_app, session
 import time
 import os
+import subprocess
 from pathlib import Path
 import base64
 import json
@@ -17,12 +18,6 @@ from workflows.tts.coqui import tts_workflow as english_tts_workflow
 from workflows.tts.coqui import playback_speech
 from workflows.text_to_text.english import get_model as get_llama_model
 
-# Import Malay workflows
-from workflows.tts.malay_male_tts import get_tts_model as get_malay_male_tts_model
-from workflows.tts.malay_male_tts import tts_workflow as malay_male_tts_workflow
-from workflows.tts.malay_female_tts import get_tts_model as get_malay_female_tts_model
-from workflows.tts.malay_female_tts import tts_workflow as malay_female_tts_workflow
-
 # Import Malay text-to-text directly
 # Use the direct function rather than just the model loader
 from workflows.text_to_text.malay import generate_mallam_response
@@ -35,15 +30,11 @@ disable_progress_bar()
 # Initialize model references (but don't load them yet)
 english_tts_model = None
 llama_model = None
-malay_male_tts_model = None
-malay_female_tts_model = None
 
 # Track which models are currently loaded in memory
 loaded_models = {
     "english_tts": False,
-    "llama": False,
-    "malay_male_tts": False,
-    "malay_female_tts": False
+    "llama": False
 }
 
 # Current avatar selections
@@ -61,7 +52,7 @@ def unload_models(except_language=None):
     Args:
         except_language (str, optional): Language models to keep loaded ('English' or 'Malay')
     """
-    global english_tts_model, llama_model, malay_male_tts_model, malay_female_tts_model, loaded_models
+    global english_tts_model, llama_model, loaded_models
     
     print(f"Unloading models except for language: {except_language}")
     
@@ -75,17 +66,6 @@ def unload_models(except_language=None):
         if loaded_models["llama"]:
             llama_model = None
             loaded_models["llama"] = False
-    
-    # Unload Malay models if we're switching to English
-    if except_language != "Malay" and (loaded_models["malay_male_tts"] or loaded_models["malay_female_tts"]):
-        print("Unloading Malay models...")
-        if loaded_models["malay_male_tts"]:
-            malay_male_tts_model = None
-            loaded_models["malay_male_tts"] = False
-        
-        if loaded_models["malay_female_tts"]:
-            malay_female_tts_model = None
-            loaded_models["malay_female_tts"] = False
     
     # Force garbage collection to free memory
     gc.collect()
@@ -113,23 +93,127 @@ def get_llama():
         loaded_models["llama"] = True
     return llama_model
 
-def get_malay_male_tts():
-    """Lazy-load the Malay male TTS model."""
-    global malay_male_tts_model, loaded_models
-    if malay_male_tts_model is None:
-        print("Loading Malay male TTS model...")
-        malay_male_tts_model = get_malay_male_tts_model()
-        loaded_models["malay_male_tts"] = True
-    return malay_male_tts_model
-
-def get_malay_female_tts():
-    """Lazy-load the Malay female TTS model."""
-    global malay_female_tts_model, loaded_models
-    if malay_female_tts_model is None:
-        print("Loading Malay female TTS model...")
-        malay_female_tts_model = get_malay_female_tts_model()
-        loaded_models["malay_female_tts"] = True
-    return malay_female_tts_model
+def run_malay_tts(text, speaker, output_path):
+    """
+    Run the Malay TTS using a subprocess with the dedicated virtual environment.
+    
+    Args:
+        text (str): Text to convert to speech
+        speaker (str): Speaker name ('Osman' for male, 'Yasmin' for female)
+        output_path (str): Path to save the output audio file
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Get the current directory and build paths relative to it
+        base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        print(f"Base directory: {base_dir}")
+        
+        # Path to the mesolitica.py script
+        script_path = os.path.join(base_dir, 'workflows', 'tts', 'mesolitica.py')
+        print(f"Script path: {script_path}")
+        
+        # Verify script exists
+        if not os.path.exists(script_path):
+            print(f"ERROR: Script file not found at: {script_path}")
+            # Try to find the script
+            for root, dirs, files in os.walk(base_dir):
+                if 'mesolitica.py' in files:
+                    script_path = os.path.join(root, 'mesolitica.py')
+                    print(f"Found script at: {script_path}")
+                    break
+        
+        # Path to the Python executable in the Malay venv
+        if os.name == 'nt':  # Windows
+            python_path = os.path.join(base_dir, 'venv-malay', 'Scripts', 'python.exe')
+        else:  # Linux/Mac
+            python_path = os.path.join(base_dir, 'venv-malay', 'bin', 'python')
+        
+        print(f"Python path: {python_path}")
+        
+        # Verify Python executable exists
+        if not os.path.exists(python_path):
+            print(f"ERROR: Python executable not found at: {python_path}")
+            # Try to find python in venv-malay
+            for root, dirs, files in os.walk(os.path.join(base_dir, 'venv-malay')):
+                for file in files:
+                    if file == 'python.exe' or file == 'python':
+                        python_path = os.path.join(root, file)
+                        print(f"Found Python at: {python_path}")
+                        break
+        
+        # Ensure output directory exists (using absolute path)
+        output_dir = os.path.dirname(os.path.abspath(output_path))
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"Output directory: {output_dir}")
+        
+        # Create a temporary file to hold the text with absolute path
+        temp_text_file = os.path.join(output_dir, "temp_text.txt")
+        print(f"Temp text file: {temp_text_file}")
+        
+        with open(temp_text_file, "w", encoding="utf-8") as f:
+            f.write(text)
+            print(f"Text written to temp file: {text[:30]}...")
+        
+        # Verify temp file was created
+        if not os.path.exists(temp_text_file):
+            print(f"ERROR: Failed to create temp file at: {temp_text_file}")
+            return False
+            
+        # Use absolute paths for everything in the command
+        abs_output_path = os.path.abspath(output_path)
+        
+        # Run the subprocess
+        command = [
+            python_path,
+            script_path,
+            "--text-file", temp_text_file,
+            "--speaker", speaker,
+            "--output", abs_output_path
+        ]
+        
+        print(f"Running Malay TTS subprocess with command: {' '.join(command)}")
+        
+        # Run the subprocess and capture output
+        result = subprocess.run(
+            command, 
+            capture_output=True,
+            text=True
+        )
+        
+        # Print both stdout and stderr regardless of success
+        if result.stdout:
+            print(f"Malay TTS subprocess stdout: {result.stdout}")
+        if result.stderr:
+            print(f"Malay TTS subprocess stderr: {result.stderr}")
+            
+        # Check return code
+        if result.returncode != 0:
+            print(f"Subprocess failed with return code: {result.returncode}")
+            return False
+        
+        # Clean up the temporary file
+        try:
+            if os.path.exists(temp_text_file):
+                os.remove(temp_text_file)
+                print("Temp file removed successfully")
+        except Exception as cleanup_error:
+            print(f"Warning: Failed to remove temp file: {cleanup_error}")
+        
+        # Verify the output file was created
+        if os.path.exists(abs_output_path):
+            print(f"Success: Output file created at {abs_output_path}")
+            return True
+        else:
+            print(f"ERROR: Output file was not created at {abs_output_path}")
+            return False
+    
+    except Exception as e:
+        print(f"Error running Malay TTS subprocess: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def generate_llama_response(prompt, persona=None, avatar_config=None):
     """Generate a response using the Llama model."""
@@ -210,6 +294,10 @@ def generate_llama_response(prompt, persona=None, avatar_config=None):
 
         # Replace "A: " anywhere in the response
         answer_text = answer_text.replace("A: ", "").strip()
+
+        # If final answer text is empty or just whitespace, use a fallback message
+        if not answer_text or answer_text.isspace():
+            answer_text = "That's a difficult one. Could you rephrase that?"
 
         print(f"Llama response generated in {elapsed_time:.2f} seconds: {answer_text}")
         return answer_text
@@ -334,13 +422,17 @@ def process_speech(text, avatar_config=None):
             print("Generating Malay response using Mallam...")
             response_text = generate_mallam_response(text)
             
-            # Select the appropriate TTS model based on gender
-            if gender == "Male":
-                model, tokenizer = get_malay_male_tts()
-                malay_male_tts_workflow(model, tokenizer, response_text, output_path)
-            else:  # Female
-                model, tokenizer = get_malay_female_tts()
-                malay_female_tts_workflow(model, tokenizer, response_text, output_path)
+            # Select the appropriate speaker based on gender
+            speaker_name = "Osman" if gender == "Male" else "Yasmin"
+            
+            # Run the Malay TTS subprocess
+            tts_success = run_malay_tts(response_text, speaker_name, output_path)
+            
+            if not tts_success:
+                print("Warning: Malay TTS subprocess failed. Using fallback message.")
+                response_text = "Maaf, saya menghadapi masalah teknikal sekarang."
+                # Try again with a simpler message
+                run_malay_tts(response_text, speaker_name, output_path)
         
         # Generate lipsync data
         lipsync_data = generate_rhubarb_lipsync(output_path)
@@ -372,12 +464,8 @@ def process_speech(text, avatar_config=None):
                 speaker_path = get_speaker_path(avatar_config)
                 english_tts_workflow(model, fallback_response, speaker_path, output_path)
             else:  # Malay
-                if gender == "Male":
-                    model, tokenizer = get_malay_male_tts()
-                    malay_male_tts_workflow(model, tokenizer, fallback_response, output_path)
-                else:  # Female
-                    model, tokenizer = get_malay_female_tts()
-                    malay_female_tts_workflow(model, tokenizer, fallback_response, output_path)
+                speaker_name = "Osman" if gender == "Male" else "Yasmin"
+                run_malay_tts(fallback_response, speaker_name, output_path)
             
             # Generate lipsync data for fallback
             lipsync_data = generate_rhubarb_lipsync(output_path)
@@ -428,20 +516,13 @@ def initialize_models_for_current_language():
     """
     try:
         language = current_avatar_selections.get("language", "English")
-        gender = current_avatar_selections.get("gender", "Male")
         
-        print(f"Pre-loading models for language: {language}, gender: {gender}")
+        print(f"Pre-loading models for language: {language}")
         
         if language == "English":
             # Load English models
             get_llama()
             get_english_tts()
-        else:  # Malay
-            # Load appropriate Malay models based on gender
-            if gender == "Male":
-                get_malay_male_tts()
-            else:
-                get_malay_female_tts()
         
         print(f"Initial model loading complete. Loaded models: {loaded_models}")
     except Exception as e:

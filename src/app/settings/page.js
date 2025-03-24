@@ -143,8 +143,8 @@ export default function Settings() {
                   className="user-placeholder object-center"
                   src="/icons/user-placeholder.png"
                   alt="User"
-                  width={50}
-                  height={50}
+                  width={200}
+                  height={200}
                   priority
                 />
 
