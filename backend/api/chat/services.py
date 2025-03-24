@@ -15,12 +15,11 @@ from workflows.tts.coqui import get_tts_model as get_english_tts_model
 from workflows.tts.coqui import tts_workflow as english_tts_workflow
 from workflows.tts.coqui import playback_speech
 from workflows.text_to_text.english import get_model as get_llama_model
+from workflows.text_to_text.english import generate_response as llama_model_response
 
 # Import Malay workflows
-from workflows.tts.malay_male_tts import get_tts_model as get_malay_male_tts_model
-from workflows.tts.malay_male_tts import tts_workflow as malay_male_tts_workflow
-from workflows.tts.malay_female_tts import get_tts_model as get_malay_female_tts_model
-from workflows.tts.malay_female_tts import tts_workflow as malay_female_tts_workflow
+from backend.workflows.tts.mesolitica import get_malay_tts_model
+from backend.workflows.tts.mesolitica import malay_tts_workflow
 
 # Import Malay text-to-text directly
 # Use the direct function rather than just the model loader
@@ -102,6 +101,15 @@ def get_english_tts():
         loaded_models["english_tts"] = True
     return english_tts_model
 
+def get_malay_tts():
+    """Lazy-load the Malay TTS model."""
+    global malay_tts_model, malay_tokenizer, loaded_models
+    if malay_tts_model is None:
+        print("Loading Malay TTS model...")
+        malay_tts_model, malay_tokenizer = get_malay_tts_model()
+        loaded_models["malay_tts"] = True
+    return malay_tts_model, malay_tokenizer
+
 def get_llama():
     """Lazy-load the Llama model."""
     global llama_model, loaded_models
@@ -111,55 +119,37 @@ def get_llama():
         loaded_models["llama"] = True
     return llama_model
 
-def get_malay_male_tts():
-    """Lazy-load the Malay male TTS model."""
-    global malay_male_tts_model, loaded_models
-    if malay_male_tts_model is None:
-        print("Loading Malay male TTS model...")
-        malay_male_tts_model = get_malay_male_tts_model()
-        loaded_models["malay_male_tts"] = True
-    return malay_male_tts_model
-
-def get_malay_female_tts():
-    """Lazy-load the Malay female TTS model."""
-    global malay_female_tts_model, loaded_models
-    if malay_female_tts_model is None:
-        print("Loading Malay female TTS model...")
-        malay_female_tts_model = get_malay_female_tts_model()
-        loaded_models["malay_female_tts"] = True
-    return malay_female_tts_model
-
-def generate_llama_response(text):
-    """Generate a response using the Llama model."""
-    try:
-        model = get_llama()
+# def generate_llama_response(text):
+#     """Generate a response using the Llama model."""
+#     try:
+#         model = get_llama()
         
-        # Measure response time
-        start_time = time.time()
+#         # Measure response time
+#         start_time = time.time()
         
-        # Generate response
-        sequences = model(
-            text,
-            do_sample=True,
-            top_k=10,
-            num_return_sequences=1,
-            max_length=512,
-            temperature=0.7,
-        )
+#         # Generate response
+#         sequences = model(
+#             text,
+#             do_sample=True,
+#             top_k=10,
+#             num_return_sequences=1,
+#             max_length=512,
+#             temperature=0.7,
+#         )
         
-        end_time = time.time()
-        elapsed_time = end_time - start_time
+#         end_time = time.time()
+#         elapsed_time = end_time - start_time
         
-        # Extract and clean the response
-        response = sequences[0]["generated_text"]
+#         # Extract and clean the response
+#         response = sequences[0]["generated_text"]
         
-        print(f"Llama response generated in {elapsed_time:.2f} seconds")
-        return response
+#         print(f"Llama response generated in {elapsed_time:.2f} seconds")
+#         return response
         
-    except Exception as e:
-        print(f"Error generating Llama response: {e}")
-        # Return the original text with an error message as fallback
-        return f"I couldn't process that properly. Here's what you said: {text}"
+#     except Exception as e:
+#         print(f"Error generating Llama response: {e}")
+#         # Return the original text with an error message as fallback
+#         return f"I couldn't process that properly. Here's what you said: {text}"
 
 def save_avatar_selections(selections):
     """
@@ -259,7 +249,7 @@ def process_speech(text, avatar_config=None):
         # Process based on language
         if language == "English":
             # Generate response using Llama
-            response_text = generate_llama_response(text)
+            response_text = llama_model_response(text)
             
             # Get TTS model
             model = get_english_tts()
@@ -274,14 +264,14 @@ def process_speech(text, avatar_config=None):
             # Generate response using Mallam (direct call to module function)
             print("Generating Malay response using Mallam...")
             response_text = generate_mallam_response(text)
+
+            # model, tokenizer = get_malay_tts()
             
             # Select the appropriate TTS model based on gender
             if gender == "Male":
-                model, tokenizer = get_malay_male_tts()
-                malay_male_tts_workflow(model, tokenizer, response_text, output_path)
-            else:  # Female
-                model, tokenizer = get_malay_female_tts()
-                malay_female_tts_workflow(model, tokenizer, response_text, output_path)
+                malay_tts_workflow(response_text, "Osman", output_path)
+            elif gender == "Female":  # Female
+                malay_tts_workflow(response_text, "Yasmin", output_path)
         
         # Generate lipsync data
         lipsync_data = generate_rhubarb_lipsync(output_path)
