@@ -9,6 +9,7 @@ import base64
 import json
 import gc
 import torch
+import re
 
 # Import English workflows
 from workflows.tts.coqui import get_tts_model as get_english_tts_model
@@ -55,6 +56,7 @@ current_avatar_selections = {
 def unload_models(except_language=None):
     """
     Unload models that aren't needed for the current language to free up GPU memory.
+    Only called when language is changed in avatar settings.
     
     Args:
         except_language (str, optional): Language models to keep loaded ('English' or 'Malay')
@@ -129,37 +131,93 @@ def get_malay_female_tts():
         loaded_models["malay_female_tts"] = True
     return malay_female_tts_model
 
-def generate_llama_response(text):
+def generate_llama_response(prompt, persona=None, avatar_config=None):
     """Generate a response using the Llama model."""
+
+    # Use provided config or fallback to current selections
+    config = avatar_config or current_avatar_selections
+    
+    persona_context = config.get("persona", "Casual")
+    
+    # Drastically different persona intros
+    if persona_context == "Casual":
+        persona = (
+            "DO NOT CONTINUE THE PROMPT!!!"
+            "You are a friendly English language assistant helping learners improve their communication skills in casual, everyday settings."
+            "Please provide simple, short, and friendly responses with examples that are suitable for informal conversations." 
+            "Your response should focus on casual language and tone, avoiding overly formal or stiff expressions." 
+            "Keep your responses friendly, warm, and easy to understand, with a relaxed vibe." 
+            "Provide light, conversational examples. Keep to maximum of 3 lines."
+            "DO NOT USE ANY EMOJIS"
+        )
+    elif persona_context == "Professional":
+        persona = (
+            "DO NOT CONTINUE THE PROMPT!!!"
+            "You are an English language assistant helping professionals improve their communication skills in the workplace. Please provide clear, concise, and formal responses with examples appropriate for a business setting." 
+            "Your response should focus on professional language and avoid informal or casual phrases." 
+            "Make sure the language is polite, respectful, and suitable for use in professional conversations." 
+            "Provide formal, polite examples." 
+            "Keep to maximum of 3 lines."
+            "DO NOT USE ANY EMOJIS"
+        )
+    else:
+        persona = (
+            "I'm your English learning assistant, ready to adapt to your needs. "
+            "Let me know how you'd like to learn!"
+            "Keep your response length within 2 sentences."
+            "Don't use emojis in your response!"
+        )
+
+    modified_prompt = persona + "\n" + prompt
+    start_time = time.time()
+
     try:
         model = get_llama()
         
         # Measure response time
         start_time = time.time()
         
-        # Generate response
         sequences = model(
-            text,
+            modified_prompt,
             do_sample=True,
             top_k=10,
             num_return_sequences=1,
-            max_length=512,
+            max_length=250,  # Ensure token limit
+            truncation=True,
             temperature=0.7,
         )
-        
+
         end_time = time.time()
         elapsed_time = end_time - start_time
-        
-        # Extract and clean the response
-        response = sequences[0]["generated_text"]
-        
-        print(f"Llama response generated in {elapsed_time:.2f} seconds")
-        return response
+
+        full_response = sequences[0]["generated_text"].strip()
+
+        # Find the last punctuation mark before truncation
+        last_punctuation_match = re.search(r'([.!?])[^.!?]*$', full_response)
+
+        if last_punctuation_match:
+            last_punctuation_index = last_punctuation_match.start(1)
+            answer_text = full_response[:last_punctuation_index + 1]  # Include the punctuation
+        else:
+            answer_text = full_response  # If no punctuation is found, return as is
+
+        # Remove trailing numbered list items if cut off (e.g., "1.", "2.")
+        answer_text = re.sub(r'\s*\d+\.\s*$', '', answer_text)
+
+        # Strip persona intro and prompt
+        answer_text = answer_text.replace(persona, "").strip()
+        answer_text = answer_text.replace(prompt, "").strip()
+
+        # Replace "A: " anywhere in the response
+        answer_text = answer_text.replace("A: ", "").strip()
+
+        print(f"Llama response generated in {elapsed_time:.2f} seconds: {answer_text}")
+        return answer_text
         
     except Exception as e:
         print(f"Error generating Llama response: {e}")
         # Return the original text with an error message as fallback
-        return f"I couldn't process that properly. Here's what you said: {text}"
+        return f"I couldn't process that properly. Here's what you said: {prompt}"
 
 def save_avatar_selections(selections):
     """
@@ -189,6 +247,7 @@ def save_avatar_selections(selections):
     # If language is changing, unload models for the previous language
     if language_changing:
         print(f"Language changed from {current_avatar_selections.get('language')} to {selections.get('language')}")
+        # This is when we actually unload models - only when language changes
         unload_models(except_language=selections.get("language"))
     
     # Optionally, save to a file for persistence across server restarts
@@ -223,7 +282,7 @@ def get_speaker_path(avatar_config=None):
     speaker_mapping = {
         ("Male", "Casual"): "inputs/male_formal.wav",
         ("Male", "Professional"): "inputs/male_formal.wav",
-        ("Female", "Casual"): "inputs/business-ethics.wav",
+        ("Female", "Casual"): "inputs/female_casual_cleaned.wav",
         ("Female", "Professional"): "inputs/business-ethics.wav"
     }
     
@@ -259,7 +318,7 @@ def process_speech(text, avatar_config=None):
         # Process based on language
         if language == "English":
             # Generate response using Llama
-            response_text = generate_llama_response(text)
+            response_text = generate_llama_response(text, avatar_config=config)
             
             # Get TTS model
             model = get_english_tts()
@@ -360,3 +419,30 @@ try:
             print(f"Loaded avatar selections: {current_avatar_selections}")
 except Exception as e:
     print(f"Warning: Could not load saved selections: {e}")
+
+# Initialize the models for the current language on application startup
+def initialize_models_for_current_language():
+    """
+    Pre-load the models for the current language setting upon startup
+    to reduce initial response time.
+    """
+    try:
+        language = current_avatar_selections.get("language", "English")
+        gender = current_avatar_selections.get("gender", "Male")
+        
+        print(f"Pre-loading models for language: {language}, gender: {gender}")
+        
+        if language == "English":
+            # Load English models
+            get_llama()
+            get_english_tts()
+        else:  # Malay
+            # Load appropriate Malay models based on gender
+            if gender == "Male":
+                get_malay_male_tts()
+            else:
+                get_malay_female_tts()
+        
+        print(f"Initial model loading complete. Loaded models: {loaded_models}")
+    except Exception as e:
+        print(f"Warning: Error during initial model loading: {e}")

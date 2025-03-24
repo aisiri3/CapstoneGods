@@ -4,6 +4,7 @@ Chat routes.
 from flask import request, current_app, send_file
 from flask_restful import Resource
 import os
+import time
 
 from config import Config
 from api.chat.services import process_speech, play_audio, encode_audio_to_base64, save_avatar_selections
@@ -18,7 +19,7 @@ class Speak(Resource):
             data = request.get_json()
             if not data or "text" not in data:
                 return {"error": "Missing 'text' field"}, 400
-
+            start_time = time.time()
             input_text = data["text"]
             
             # Get avatar configuration if provided
@@ -30,12 +31,18 @@ class Speak(Resource):
             # Encode the audio file to base64 for transmission
             encoded_audio = encode_audio_to_base64(result["audio_path"])
             
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+
+            print(f"Total time taken: {elapsed_time:.2f}s")
             # Return all the data needed by the frontend
             return {
                 "response": result["response_text"],
                 "audio": encoded_audio,
                 "mouthCues": result["mouth_cues"]
             }, 200
+        
+        
 
         except Exception as e:
             return {"error": str(e)}, 500

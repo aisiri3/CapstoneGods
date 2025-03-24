@@ -20,7 +20,7 @@ def get_tts_model(device=device):
     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
     
     # Override PyTorch default behavior to allow full model loading
-    torch.load = lambda *args, **kwargs: torch._load(*args, weights_only=False, **kwargs)
+    # torch.load = lambda *args, **kwargs: torch._load(*args, weights_only=False, **kwargs)
 
     tts.to(device)
     return tts
