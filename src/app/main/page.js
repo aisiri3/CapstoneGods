@@ -281,10 +281,19 @@ export default function MainPage() {
               enableRotate={false} // Disable rotation
             />
             <ambientLight intensity={1} />
+
+            {/* Light to shine in avatar's face */}
             <directionalLight 
               castShadow
-              position={[5, 4, 10]} 
-              intensity={1.8} 
+              position={[5, 4, 50]} 
+              intensity={1.5} 
+            />
+
+            {/* Extra light to shine above and behind the head */}
+            <directionalLight 
+              castShadow
+              position={[-10, 80, -20]} 
+              intensity={2.5} 
             />
             
             {/* Dynamic avatar component based on selection */}

@@ -7,7 +7,7 @@ import { LipSyncController } from './lipsyncController'
 export function Lana2Avatar({ lipSyncData, audioUrl, position, rotation, scale, isFiller }) {
   const headMeshRef = useRef();
   const audioRef = useRef(null);
-  const { scene } = useGLTF('/avatars/LANABLOWOUT.glb')
+  const { scene } = useGLTF('/avatars/LANA3.glb')
   const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
   const { nodes, materials } = useGraph(clone)
   const group = useRef()
@@ -76,11 +76,11 @@ export function Lana2Avatar({ lipSyncData, audioUrl, position, rotation, scale, 
       // Avatar is always smiling
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileLeft"]
-      ] = 0.6;
+      ] = 0.4;
 
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileRight"]
-      ] = 0.6;
+      ] = 0.4;
       
       console.log("Default facial expressions set successfully");
       setIsInitialized(true);
@@ -295,4 +295,4 @@ export function Lana2Avatar({ lipSyncData, audioUrl, position, rotation, scale, 
 }
 
 // Preload the GLB model
-useGLTF.preload('/avatars/LANABLOWOUT.glb')
+useGLTF.preload('/avatars/LANA3.glb')
