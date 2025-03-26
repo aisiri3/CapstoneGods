@@ -1,0 +1,176 @@
+/* Main container for the settings page */
+.settings-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full screen height */
+    position: relative;
+    font-size: 1rem;
+}
+
+/* Back button styling */
+.back-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 2;
+}
+  
+.split {
+    height: 100%;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+}
+
+.left, .right {
+    display: flex;
+    align-items: center; /* Center vertically */
+    height: 100vh;
+}
+
+.left {
+    left: 0;
+    justify-content: flex-end; /* Align left-form to the right */
+    width: calc(40% - 15px); /* Reduce width to create a gap */
+}
+
+.right {
+    right: 0;
+    justify-content: flex-start; /* Align right-form to the left */
+    width: calc(60% - 15px); /* Reduce width to create a gap */
+}
+
+.left-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Keep heading near the top */
+    background-color: rgba(68, 68, 77, 0.7);
+    border-radius: 10px;
+    width: 70%;
+    height: 75%;
+    padding: 2rem 3rem;
+}
+
+/* Ensure heading stays near the top */
+.left-heading {
+    font-size: 1.2rem;
+    color: white;
+    margin-bottom: 1rem; /* Spacing between heading and content */
+}
+
+.left-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Wrap content in a div and center it */
+.left-content-wrapper {
+    flex-grow: 1; /* Takes up remaining space */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centers content vertically */
+    align-items: center;
+    width: 100%;
+}
+
+.right-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Keep heading near the top */
+    background-color: rgba(68, 68, 77, 0.7);
+    border-radius: 10px;
+    width: 80%;
+    height: 75%;
+    padding: 2rem 3rem;
+}
+
+/* Ensure heading stays near the top */
+.right-heading {
+    font-size: 1.2rem;
+    color: white;
+    margin-bottom: 1rem; /* Spacing between heading and content */
+}
+
+/* Wrap content in a div and center it */
+.right-content-wrapper {
+    flex-grow: 1; /* Takes up remaining space */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centers content vertically */
+    width: 100%;
+}
+
+
+.form-heading {
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+/* Style inputs to match register form */
+input {
+    margin-bottom: 16px;
+    display: block;
+    height: 40px;
+    border-radius: 5px;
+    border: 1px solid #4a5568;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* Password input container for the eye icon */
+.password-input-container {
+    position: relative;
+    display: inline-block;
+    width: 75%;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 8px;
+    top: 40%;
+    right: 3%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    z-index: 2;
+}
+
+/* Button styling */
+/* button {
+    transition: background-color 0.2s, transform 0.1s;
+} */
+
+.subheading {
+    font-size: 1.2rem;
+}
+
+/* Success and error messages */
+.text-red-500 {
+    color: #f56565;
+}
+
+.text-green-500 {
+    color: #48bb78;
+}
+
+.user-placeholder {
+    width: 200px;
+    height: 200px;
+    object-position: center;
+}

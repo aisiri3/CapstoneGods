@@ -1,0 +1,17 @@
+sounddevice
+spacy
+TTS==0.22.0
+accelerate
+flask
+flask-restful
+flask-mysqldb
+transformers
+bcrypt
+huggingface-hub
+mysql-connector-python
+requests
+pandas 
+openpyxl 
+sentence-transformers 
+numpy
+

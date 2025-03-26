@@ -1,0 +1,547 @@
+"""
+Chat services with integrated language model generation and TTS.
+"""
+from flask import current_app, session
+import time
+import os
+import subprocess
+from pathlib import Path
+import base64
+import json
+import gc
+import torch
+import re
+
+# Import English workflows
+from workflows.tts.coqui import get_tts_model as get_english_tts_model
+from workflows.tts.coqui import tts_workflow as english_tts_workflow
+from workflows.tts.coqui import playback_speech
+from workflows.text_to_text.english import get_model as get_llama_model
+
+# Import Malay text-to-text directly
+# Use the direct function rather than just the model loader
+from workflows.text_to_text.malay import generate_mallam_response
+
+from workflows.lipsync.lipsync import generate_rhubarb_lipsync
+
+from transformers.utils.logging import disable_progress_bar
+disable_progress_bar()
+
+# Initialize model references (but don't load them yet)
+english_tts_model = None
+llama_model = None
+
+# Track which models are currently loaded in memory
+loaded_models = {
+    "english_tts": False,
+    "llama": False
+}
+
+# Current avatar selections
+current_avatar_selections = {
+    "gender": "Male",
+    "persona": "Casual",
+    "language": "English"
+}
+
+def print_gpu_memory_status():
+    """Print current GPU memory usage for debugging."""
+    if torch.cuda.is_available():
+        allocated = torch.cuda.memory_allocated() / (1024**3)
+        reserved = torch.cuda.memory_reserved() / (1024**3)
+        print(f"GPU Memory: {allocated:.2f} GB allocated, {reserved:.2f} GB reserved")
+    else:
+        print("CUDA not available")
+
+def unload_models(except_language=None):
+    """
+    Unload models that aren't needed for the current language to free up GPU memory.
+    """
+    global english_tts_model, llama_model, loaded_models
+    
+    print(f"Unloading models except for language: {except_language}")
+    
+    # Unload English models if we're switching to Malay
+    if except_language != "English" and (loaded_models["english_tts"] or loaded_models["llama"]):
+        print("Unloading English models...")
+        if loaded_models["english_tts"]:
+            # Force synchronization before deletion
+            if hasattr(english_tts_model, 'cpu'):
+                english_tts_model.cpu()  # Move model to CPU first if possible
+            english_tts_model = None
+            loaded_models["english_tts"] = False
+        
+        if loaded_models["llama"]:
+            # Force synchronization before deletion
+            if hasattr(llama_model, 'cpu'):
+                llama_model.cpu()  # Move model to CPU first
+            llama_model = None
+            loaded_models["llama"] = False
+    
+    # Force garbage collection to free memory
+    gc.collect()
+    
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()  # Wait for all CUDA operations to complete
+        torch.cuda.empty_cache()
+        # Double-check memory is released
+        print(f"GPU memory allocated after cleanup: {torch.cuda.memory_allocated() / (1024**3):.2f} GB")
+    
+    print("Model unloading complete")
+    print(f"Current loaded models: {loaded_models}")
+
+def get_english_tts():
+    """Lazy-load the English TTS model."""
+    global english_tts_model, loaded_models
+    if english_tts_model is None:
+        print("Loading English TTS model...")
+        english_tts_model = get_english_tts_model()
+        loaded_models["english_tts"] = True
+    return english_tts_model
+
+def get_llama():
+    """Lazy-load the Llama model."""
+    global llama_model, loaded_models
+    if llama_model is None:
+        print("Loading Llama model...")
+        llama_model = get_llama_model()
+        loaded_models["llama"] = True
+    return llama_model
+
+def run_malay_tts(text, speaker, output_path):
+    """
+    Run the Malay TTS using a subprocess with the dedicated virtual environment.
+    
+    Args:
+        text (str): Text to convert to speech
+        speaker (str): Speaker name ('Osman' for male, 'Yasmin' for female)
+        output_path (str): Path to save the output audio file
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Get the current directory and build paths relative to it
+        base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        print(f"Base directory: {base_dir}")
+        
+        # Path to the mesolitica.py script
+        script_path = os.path.join(base_dir, 'workflows', 'tts', 'mesolitica.py')
+        print(f"Script path: {script_path}")
+        
+        # Verify script exists
+        if not os.path.exists(script_path):
+            print(f"ERROR: Script file not found at: {script_path}")
+            # Try to find the script
+            for root, dirs, files in os.walk(base_dir):
+                if 'mesolitica.py' in files:
+                    script_path = os.path.join(root, 'mesolitica.py')
+                    print(f"Found script at: {script_path}")
+                    break
+        
+        # Path to the Python executable in the Malay venv
+        if os.name == 'nt':  # Windows
+            python_path = os.path.join(base_dir, 'venv-malay', 'Scripts', 'python.exe')
+        else:  # Linux/Mac
+            python_path = os.path.join(base_dir, 'venv-malay', 'bin', 'python')
+        
+        print(f"Python path: {python_path}")
+        
+        # Verify Python executable exists
+        if not os.path.exists(python_path):
+            print(f"ERROR: Python executable not found at: {python_path}")
+            # Try to find python in venv-malay
+            for root, dirs, files in os.walk(os.path.join(base_dir, 'venv-malay')):
+                for file in files:
+                    if file == 'python.exe' or file == 'python':
+                        python_path = os.path.join(root, file)
+                        print(f"Found Python at: {python_path}")
+                        break
+        
+        # Ensure output directory exists (using absolute path)
+        output_dir = os.path.dirname(os.path.abspath(output_path))
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"Output directory: {output_dir}")
+        
+        # Create a temporary file to hold the text with absolute path
+        temp_text_file = os.path.join(output_dir, "temp_text.txt")
+        print(f"Temp text file: {temp_text_file}")
+        
+        with open(temp_text_file, "w", encoding="utf-8") as f:
+            f.write(text)
+            print(f"Text written to temp file: {text[:30]}...")
+        
+        # Verify temp file was created
+        if not os.path.exists(temp_text_file):
+            print(f"ERROR: Failed to create temp file at: {temp_text_file}")
+            return False
+            
+        # Use absolute paths for everything in the command
+        abs_output_path = os.path.abspath(output_path)
+        
+        # Run the subprocess
+        command = [
+            python_path,
+            script_path,
+            "--text-file", temp_text_file,
+            "--speaker", speaker,
+            "--output", abs_output_path
+        ]
+        
+        print(f"Running Malay TTS subprocess with command: {' '.join(command)}")
+        
+        # Run the subprocess and capture output
+        result = subprocess.run(
+            command, 
+            capture_output=True,
+            text=True
+        )
+        
+        # Print both stdout and stderr regardless of success
+        if result.stdout:
+            print(f"Malay TTS subprocess stdout: {result.stdout}")
+        if result.stderr:
+            print(f"Malay TTS subprocess stderr: {result.stderr}")
+            
+        # Check return code
+        if result.returncode != 0:
+            print(f"Subprocess failed with return code: {result.returncode}")
+            return False
+        
+        # Clean up the temporary file
+        try:
+            if os.path.exists(temp_text_file):
+                os.remove(temp_text_file)
+                print("Temp file removed successfully")
+        except Exception as cleanup_error:
+            print(f"Warning: Failed to remove temp file: {cleanup_error}")
+        
+        # Verify the output file was created
+        if os.path.exists(abs_output_path):
+            print(f"Success: Output file created at {abs_output_path}")
+            return True
+        else:
+            print(f"ERROR: Output file was not created at {abs_output_path}")
+            return False
+    
+    except Exception as e:
+        print(f"Error running Malay TTS subprocess: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def generate_llama_response(prompt, persona=None, avatar_config=None):
+    """Generate a response using the Llama model."""
+
+    # Use provided config or fallback to current selections
+    config = avatar_config or current_avatar_selections
+    
+    persona_context = config.get("persona", "Casual")
+    
+    # Drastically different persona intros
+    if persona_context == "Casual":
+        persona = (
+            "DO NOT CONTINUE THE PROMPT!!!"
+            "You are a friendly English language assistant helping learners improve their communication skills in casual, everyday settings."
+            "Please provide simple, short, and friendly responses with examples that are suitable for informal conversations." 
+            "Your response should focus on casual language and tone, avoiding overly formal or stiff expressions." 
+            "Keep your responses friendly, warm, and easy to understand, with a relaxed vibe." 
+            "Provide light, conversational examples. Keep to maximum of 3 lines."
+            "DO NOT USE ANY EMOJIS"
+        )
+    elif persona_context == "Professional":
+        persona = (
+            "DO NOT CONTINUE THE PROMPT!!!"
+            "You are an English language assistant helping professionals improve their communication skills in the workplace. Please provide clear, concise, and formal responses with examples appropriate for a business setting." 
+            "Your response should focus on professional language and avoid informal or casual phrases." 
+            "Make sure the language is polite, respectful, and suitable for use in professional conversations." 
+            "Provide formal, polite examples." 
+            "Keep to maximum of 3 lines."
+            "DO NOT USE ANY EMOJIS"
+        )
+    else:
+        persona = (
+            "I'm your English learning assistant, ready to adapt to your needs. "
+            "Let me know how you'd like to learn!"
+            "Keep your response length within 2 sentences."
+            "Don't use emojis in your response!"
+        )
+
+    modified_prompt = persona + "\n" + prompt
+    start_time = time.time()
+
+    try:
+        model = get_llama()
+        
+        # Measure response time
+        start_time = time.time()
+        
+        sequences = model(
+            modified_prompt,
+            do_sample=True,
+            top_k=10,
+            num_return_sequences=1,
+            max_length=250,  # Ensure token limit
+            truncation=True,
+            temperature=0.7,
+        )
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+
+        full_response = sequences[0]["generated_text"].strip()
+
+        # Find the last punctuation mark before truncation
+        last_punctuation_match = re.search(r'([.!?])[^.!?]*$', full_response)
+
+        if last_punctuation_match:
+            last_punctuation_index = last_punctuation_match.start(1)
+            answer_text = full_response[:last_punctuation_index + 1]  # Include the punctuation
+        else:
+            answer_text = full_response  # If no punctuation is found, return as is
+
+        # Remove trailing numbered list items if cut off (e.g., "1.", "2.")
+        answer_text = re.sub(r'\s*\d+\.\s*$', '', answer_text)
+
+        # Strip persona intro and prompt
+        answer_text = answer_text.replace(persona, "").strip()
+        answer_text = answer_text.replace(prompt, "").strip()
+
+        # Replace "A: " anywhere in the response
+        answer_text = answer_text.replace("A: ", "").strip()
+
+        # If final answer text is empty or just whitespace, use a fallback message
+        if not answer_text or answer_text.isspace():
+            answer_text = "That's a difficult one. Could you rephrase that?"
+
+        print(f"Llama response generated in {elapsed_time:.2f} seconds: {answer_text}")
+        return answer_text
+        
+    except Exception as e:
+        print(f"Error generating Llama response: {e}")
+        # Return the original text with an error message as fallback
+        return f"I couldn't process that properly. Here's what you said: {prompt}"
+
+def save_avatar_selections(selections):
+    """
+    Save the avatar selections to use for future interactions.
+    
+    Args:
+        selections (dict): Dictionary containing gender, persona, and language selections
+        
+    Returns:
+        dict: The saved selections
+    """
+    global current_avatar_selections
+    
+    # Check if language is changing
+    language_changing = current_avatar_selections.get("language") != selections.get("language")
+    
+    # Update the current selections
+    current_avatar_selections.update({
+        "gender": selections.get("gender", "Male"),
+        "persona": selections.get("persona", "Casual"),
+        "language": selections.get("language", "English")
+    })
+    
+    # Log the updated selections
+    print(f"Updated avatar selections: {current_avatar_selections}")
+    
+    # If language is changing, unload models for the previous language
+    if language_changing:
+        print(f"Language changed from {current_avatar_selections.get('language')} to {selections.get('language')}")
+        # This is when we actually unload models - only when language changes
+        unload_models(except_language=selections.get("language"))
+
+        # brief cooldown to ensure the memory cleanup is complete
+        time.sleep(2)
+    
+    # Optionally, save to a file for persistence across server restarts
+    selections_file = current_app.config.get('AVATAR_SELECTIONS_PATH', 'data/avatar_selections.json')
+    os.makedirs(os.path.dirname(selections_file), exist_ok=True)
+    
+    try:
+        with open(selections_file, 'w') as f:
+            json.dump(current_avatar_selections, f)
+    except Exception as e:
+        print(f"Warning: Could not save selections to file: {e}")
+    
+    return current_avatar_selections
+
+def get_speaker_path(avatar_config=None):
+    """
+    Determine the appropriate speaker path based on avatar configuration.
+    
+    Args:
+        avatar_config (dict, optional): Avatar configuration from frontend
+        
+    Returns:
+        str: Path to the speaker file
+    """
+    # Use provided config or fallback to current selections
+    config = avatar_config or current_avatar_selections
+    
+    gender = config.get("gender", "Male")
+    persona = config.get("persona", "Casual")
+    
+    # Map config to speaker files
+    speaker_mapping = {
+        ("Male", "Casual"): "inputs/male_formal.wav",
+        ("Male", "Professional"): "inputs/male_formal.wav",
+        ("Female", "Casual"): "inputs/female_casual_cleaned.wav",
+        ("Female", "Professional"): "inputs/business-ethics.wav"
+    }
+    
+    # Get the appropriate speaker path, with fallback
+    speaker_path = speaker_mapping.get(
+        (gender, persona), 
+        current_app.config.get('TTS_SPEAKER_PATH', 'inputs/business-ethics.wav')
+    )
+    
+    print(f"Using speaker path: {speaker_path} for gender={gender}, persona={persona}")
+    return speaker_path
+
+def process_speech(text, avatar_config=None):
+    """
+    Process speech from text input, using the appropriate model for text generation,
+    TTS for audio generation, and Rhubarb for lipsync.
+    
+    Args:
+        text (str): The input text from the user
+        avatar_config (dict, optional): Avatar configuration from frontend
+        
+    Returns:
+        dict: Contains the response text, audio file path, and lipsync data
+    """
+    # Use provided config or fallback to current selections
+    config = avatar_config or current_avatar_selections
+    language = config.get("language", "English")
+    gender = config.get("gender", "Male")
+    
+    output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
+    
+    try:
+        # Process based on language
+        if language == "English":
+            # Generate response using Llama
+            response_text = generate_llama_response(text, avatar_config=config)
+            
+            # Get TTS model
+            model = get_english_tts()
+            
+            # Get appropriate speaker path based on avatar config
+            speaker_path = get_speaker_path(avatar_config)
+            
+            # Convert response to speech
+            english_tts_workflow(model, response_text, speaker_path, output_path)
+        
+        else:  # Malay
+            # Generate response using Mallam (direct call to module function)
+            print("Generating Malay response using Mallam...")
+            response_text = generate_mallam_response(text)
+            
+            # Select the appropriate speaker based on gender
+            speaker_name = "Osman" if gender == "Male" else "Yasmin"
+            
+            # Run the Malay TTS subprocess
+            tts_success = run_malay_tts(response_text, speaker_name, output_path)
+            
+            if not tts_success:
+                print("Warning: Malay TTS subprocess failed. Using fallback message.")
+                response_text = "Maaf, saya menghadapi masalah teknikal sekarang."
+                # Try again with a simpler message
+                run_malay_tts(response_text, speaker_name, output_path)
+        
+        # Generate lipsync data
+        lipsync_data = generate_rhubarb_lipsync(output_path)
+        
+        # Get just the mouth cues from the lipsync data
+        mouth_cues = lipsync_data.get("mouthCues", [])
+        
+        # Return all necessary data
+        return {
+            "response_text": response_text,
+            "audio_path": output_path,
+            "mouth_cues": mouth_cues
+        }
+    
+    except Exception as e:
+        print(f"Error in process_speech: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Provide a fallback response
+        fallback_response = "I'm sorry, but I'm having trouble processing your request right now."
+        if language == "Malay":
+            fallback_response = "Maaf, saya menghadapi masalah dalam memproses permintaan anda sekarang."
+        
+        # Try to generate audio for the fallback response
+        try:
+            if language == "English":
+                model = get_english_tts()
+                speaker_path = get_speaker_path(avatar_config)
+                english_tts_workflow(model, fallback_response, speaker_path, output_path)
+            else:  # Malay
+                speaker_name = "Osman" if gender == "Male" else "Yasmin"
+                run_malay_tts(fallback_response, speaker_name, output_path)
+            
+            # Generate lipsync data for fallback
+            lipsync_data = generate_rhubarb_lipsync(output_path)
+            mouth_cues = lipsync_data.get("mouthCues", [])
+        except Exception as e2:
+            print(f"Error generating fallback audio: {e2}")
+            mouth_cues = []
+        
+        return {
+            "response_text": fallback_response,
+            "audio_path": output_path,
+            "mouth_cues": mouth_cues
+        }
+
+def encode_audio_to_base64(audio_path):
+    """Convert audio file to base64 for transmission to frontend."""
+    try:
+        with open(audio_path, "rb") as audio_file:
+            encoded_audio = base64.b64encode(audio_file.read()).decode('utf-8')
+            return encoded_audio
+    except Exception as e:
+        print(f"Error encoding audio: {e}")
+        return None
+
+def play_audio():
+    """Play the generated audio file (no longer needed for frontend playback)."""
+    output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
+    playback_speech(output_path)
+
+# Load saved selections on module initialization
+try:
+    selections_file = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+        'data', 'avatar_selections.json'
+    )
+    if os.path.exists(selections_file):
+        with open(selections_file, 'r') as f:
+            current_avatar_selections.update(json.load(f))
+            print(f"Loaded avatar selections: {current_avatar_selections}")
+except Exception as e:
+    print(f"Warning: Could not load saved selections: {e}")
+
+# Initialize the models for the current language on application startup
+def initialize_models_for_current_language():
+    """
+    Pre-load the models for the current language setting upon startup
+    to reduce initial response time.
+    """
+    try:
+        language = current_avatar_selections.get("language", "English")
+        
+        print(f"Pre-loading models for language: {language}")
+        
+        if language == "English":
+            # Load English models
+            get_llama()
+            get_english_tts()
+        
+        print(f"Initial model loading complete. Loaded models: {loaded_models}")
+    except Exception as e:
+        print(f"Warning: Error during initial model loading: {e}")
