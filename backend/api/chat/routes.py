@@ -7,7 +7,7 @@ import os
 import time
 
 from config import Config
-from api.chat.services import process_speech, play_audio, encode_audio_to_base64, save_avatar_selections
+from api.chat.services import process_speech_modified, encode_audio_to_base64, save_avatar_selections
 
 class Speak(Resource):
     def post(self):
@@ -26,7 +26,8 @@ class Speak(Resource):
             avatar_config = data.get("avatarConfig", None)
                 
             # Process the speech -- put through llama, TTS, and lipsync
-            result = process_speech(input_text, avatar_config)
+            result = process_speech_modified(input_text, avatar_config)
+            # result = process_speech(input_text, avatar_config)
             
             # Encode the audio file to base64 for transmission
             encoded_audio = encode_audio_to_base64(result["audio_path"])
@@ -83,18 +84,18 @@ class GetAudioFile(Resource):
             return {"error": str(e)}, 500
 
 # This route is kept for backward compatibility but is now deprecated
-class PlayAudio(Resource):
-    def post(self):
-        try:
-            # Play the generated audio file on the backend (deprecated)
-            play_audio()
-            return {"status": "audio_played"}, 200
-        except Exception as e:
-            return {"error": str(e)}, 500
+# class PlayAudio(Resource):
+#     def post(self):
+#         try:
+#             # Play the generated audio file on the backend (deprecated)
+#             play_audio()
+#             return {"status": "audio_played"}, 200
+#         except Exception as e:
+#             return {"error": str(e)}, 500
 
 def register_routes(api):
     """Register the chat routes with the API."""
     api.add_resource(Speak, '/speak')
     api.add_resource(GetAudioFile, '/get_audio')
-    api.add_resource(PlayAudio, '/play_audio')  # Kept for backward compatibility
+    # api.add_resource(PlayAudio, '/play_audio')  # Kept for backward compatibility
     api.add_resource(AvatarSelections, '/selections')  # New endpoint for avatar selections

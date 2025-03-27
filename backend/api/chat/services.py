@@ -46,33 +46,29 @@ current_avatar_selections = {
 
 def unload_models(except_language=None):
     """
-    Unload models that aren't needed for the current language to free up GPU memory.
+    Unload TTS models that aren't needed for the current language to free up GPU memory.
     Only called when language is changed in avatar settings.
+    Llama model remains loaded regardless of language change.
     
     Args:
         except_language (str, optional): Language models to keep loaded ('English' or 'Malay')
     """
-    global english_tts_model, llama_model, loaded_models
+    global english_tts_model, loaded_models
     
-    print(f"Unloading models except for language: {except_language}")
+    print(f"Unloading TTS models except for language: {except_language}")
     
-    # Unload English models if we're switching to Malay
-    if except_language != "English" and (loaded_models["english_tts"] or loaded_models["llama"]):
-        print("Unloading English models...")
-        if loaded_models["english_tts"]:
-            english_tts_model = None
-            loaded_models["english_tts"] = False
-        
-        if loaded_models["llama"]:
-            llama_model = None
-            loaded_models["llama"] = False
+    # Unload English TTS model if we're switching to Malay
+    if except_language != "English" and loaded_models["english_tts"]:
+        print("Unloading English TTS model...")
+        english_tts_model = None
+        loaded_models["english_tts"] = False
     
     # Force garbage collection to free memory
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     
-    print("Model unloading complete")
+    print("TTS model unloading complete")
     print(f"Current loaded models: {loaded_models}")
 
 def get_english_tts():
@@ -217,12 +213,12 @@ def run_malay_tts(text, speaker, output_path):
 
 def generate_llama_response(prompt, persona=None, avatar_config=None):
     """Generate a response using the Llama model."""
-
-    # Use provided config or fallback to current selections
+    print("im here!!!!")
+        # Use provided config or fallback to current selections
     config = avatar_config or current_avatar_selections
     
     persona_context = config.get("persona", "Casual")
-    
+    print(f'persona = {persona_context}')
     # Drastically different persona intros
     if persona_context == "Casual":
         persona = (
@@ -256,8 +252,9 @@ def generate_llama_response(prompt, persona=None, avatar_config=None):
     start_time = time.time()
 
     try:
+        print(f'getting llama')
         model = get_llama()
-        
+        print(f'got llama')
         # Measure response time
         start_time = time.time()
         
@@ -281,7 +278,7 @@ def generate_llama_response(prompt, persona=None, avatar_config=None):
 
         if last_punctuation_match:
             last_punctuation_index = last_punctuation_match.start(1)
-            answer_text = full_response[:last_punctuation_index + 1]  # Include the punctuation
+            answer_text = full_response[:last_punctuation_index + 1]  # Include the pumnctuation
         else:
             answer_text = full_response  # If no punctuation is found, return as is
 
@@ -368,7 +365,7 @@ def get_speaker_path(avatar_config=None):
     
     # Map config to speaker files
     speaker_mapping = {
-        ("Male", "Casual"): "inputs/male_formal.wav",
+        ("Male", "Casual"): "inputs/male_casual3.wav",
         ("Male", "Professional"): "inputs/male_formal.wav",
         ("Female", "Casual"): "inputs/female_casual_cleaned.wav",
         ("Female", "Professional"): "inputs/business-ethics.wav"
@@ -383,18 +380,155 @@ def get_speaker_path(avatar_config=None):
     print(f"Using speaker path: {speaker_path} for gender={gender}, persona={persona}")
     return speaker_path
 
-def process_speech(text, avatar_config=None):
-    """
-    Process speech from text input, using the appropriate model for text generation,
-    TTS for audio generation, and Rhubarb for lipsync.
+# def process_speech(text, avatar_config=None):
+#     """
+#     Process speech from text input, using the appropriate model for text generation,
+#     TTS for audio generation, and Rhubarb for lipsync.
     
-    Args:
-        text (str): The input text from the user
-        avatar_config (dict, optional): Avatar configuration from frontend
+#     Args:
+#         text (str): The input text from the user
+#         avatar_config (dict, optional): Avatar configuration from frontend
         
-    Returns:
-        dict: Contains the response text, audio file path, and lipsync data
+#     Returns:
+#         dict: Contains the response text, audio file path, and lipsync data
+#     """
+#     # Use provided config or fallback to current selections
+#     config = avatar_config or current_avatar_selections
+#     language = config.get("language", "English")
+#     gender = config.get("gender", "Male")
+    
+#     output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
+    
+#     try:
+#         # Process based on language
+#         if language == "English":
+#             # Generate response using Llama
+#             response_text = generate_llama_response(text, avatar_config=config)
+            
+#             # Get TTS model
+#             model = get_english_tts()
+            
+#             # Get appropriate speaker path based on avatar config
+#             speaker_path = get_speaker_path(avatar_config)
+            
+#             # Convert response to speech
+#             english_tts_workflow(model, response_text, speaker_path, output_path)
+        
+#         else:  # Malay
+#             # Generate response using Mallam (direct call to module function)
+#             print("Generating Malay response using Mallam...")
+#             response_text = generate_mallam_response(text)
+            
+#             # Select the appropriate speaker based on gender
+#             speaker_name = "Osman" if gender == "Male" else "Yasmin"
+            
+#             # Run the Malay TTS subprocess
+#             tts_success = run_malay_tts(response_text, speaker_name, output_path)
+            
+#             if not tts_success:
+#                 print("Warning: Malay TTS subprocess failed. Using fallback message.")
+#                 response_text = "Maaf, saya menghadapi masalah teknikal sekarang."
+#                 # Try again with a simpler message
+#                 run_malay_tts(response_text, speaker_name, output_path)
+        
+#         # Generate lipsync data
+#         lipsync_data = generate_rhubarb_lipsync(output_path)
+        
+#         # Get just the mouth cues from the lipsync data
+#         mouth_cues = lipsync_data.get("mouthCues", [])
+        
+#         # Return all necessary data
+#         return {
+#             "response_text": response_text,
+#             "audio_path": output_path,
+#             "mouth_cues": mouth_cues
+#         }
+    
+#     except Exception as e:
+#         print(f"Error in process_speech: {e}")
+#         import traceback
+#         traceback.print_exc()
+        
+#         # Provide a fallback response
+#         fallback_response = "I'm sorry, but I'm having trouble processing your request right now."
+#         if language == "Malay":
+#             fallback_response = "Maaf, saya menghadapi masalah dalam memproses permintaan anda sekarang."
+        
+#         # Try to generate audio for the fallback response
+#         try:
+#             if language == "English":
+#                 model = get_english_tts()
+#                 speaker_path = get_speaker_path(avatar_config)
+#                 english_tts_workflow(model, fallback_response, speaker_path, output_path)
+#             else:  # Malay
+#                 speaker_name = "Osman" if gender == "Male" else "Yasmin"
+#                 run_malay_tts(fallback_response, speaker_name, output_path)
+            
+#             # Generate lipsync data for fallback
+#             lipsync_data = generate_rhubarb_lipsync(output_path)
+#             mouth_cues = lipsync_data.get("mouthCues", [])
+#         except Exception as e2:
+#             print(f"Error generating fallback audio: {e2}")
+#             mouth_cues = []
+        
+#         return {
+#             "response_text": fallback_response,
+#             "audio_path": output_path,
+#             "mouth_cues": mouth_cues
+#         }
+
+def encode_audio_to_base64(audio_path):
+    """Convert audio file to base64 for transmission to frontend."""
+    try:
+        with open(audio_path, "rb") as audio_file:
+            encoded_audio = base64.b64encode(audio_file.read()).decode('utf-8')
+            return encoded_audio
+    except Exception as e:
+        print(f"Error encoding audio: {e}")
+        return None
+
+# def play_audio():
+#     """Play the generated audio file (no longer needed for frontend playback)."""
+#     output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
+#     playback_speech(output_path)
+
+# # Load saved selections on module initialization
+# try:
+#     selections_file = os.path.join(
+#         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+#         'data', 'avatar_selections.json'
+#     )
+#     if os.path.exists(selections_file):
+#         with open(selections_file, 'r') as f:
+#             current_avatar_selections.update(json.load(f))
+#             print(f"Loaded avatar selections: {current_avatar_selections}")
+# except Exception as e:
+#     print(f"Warning: Could not load saved selections: {e}")
+
+# Initialize the models for the current language on application startup
+def initialize_models_for_current_language():
     """
+    Pre-load the models for the current language setting upon startup
+    to reduce initial response time.
+    """
+    try:
+        language = current_avatar_selections.get("language", "English")
+        
+        print(f"Pre-loading models for language: {language}")
+        
+        if language == "English":
+            # Load English models
+            get_llama()
+            get_english_tts()
+        
+        print(f"Initial model loading complete. Loaded models: {loaded_models}")
+    except Exception as e:
+        print(f"Warning: Error during initial model loading: {e}")
+
+
+
+def process_speech_modified(text, avatar_config=None):
+    print(f'text =  {text}')
     # Use provided config or fallback to current selections
     config = avatar_config or current_avatar_selections
     language = config.get("language", "English")
@@ -406,8 +540,9 @@ def process_speech(text, avatar_config=None):
         # Process based on language
         if language == "English":
             # Generate response using Llama
-            response_text = generate_llama_response(text, avatar_config=config)
             
+            response_text = generate_llama_response(text, avatar_config=config)
+            print(f'response_text {response_text}' )
             # Get TTS model
             model = get_english_tts()
             
@@ -417,21 +552,51 @@ def process_speech(text, avatar_config=None):
             # Convert response to speech
             english_tts_workflow(model, response_text, speaker_path, output_path)
         
-        else:  # Malay
-            # Generate response using Mallam (direct call to module function)
-            print("Generating Malay response using Mallam...")
-            response_text = generate_mallam_response(text)
+        else:  # Malay language processing
+            # Import Google Cloud Translation API
+            from google.cloud import translate_v2 as translate
             
-            # Select the appropriate speaker based on gender
-            speaker_name = "Osman" if gender == "Male" else "Yasmin"
+            try:
+                # Initialize the Translation client
+                translate_client = translate.Client()
+                print(f'text = {text}' )
             
-            # Run the Malay TTS subprocess
-            tts_success = run_malay_tts(response_text, speaker_name, output_path)
-            
-            if not tts_success:
-                print("Warning: Malay TTS subprocess failed. Using fallback message.")
-                response_text = "Maaf, saya menghadapi masalah teknikal sekarang."
-                # Try again with a simpler message
+                # Translate user input from Malay to English
+                translation = translate_client.translate(
+                    text,
+                    source_language='ms',
+                    target_language='en'
+                )
+                translated_input = translation['translatedText']
+                print(f'translated_input {translated_input}' )
+                # Generate response using Llama (which works with English)
+                english_response = generate_llama_response(translated_input, avatar_config=config)
+                print(f'llama_response {english_response}')
+                # Translate response back from English to Malay
+                back_translation = translate_client.translate(
+                    english_response,
+                    source_language='en',
+                    target_language='ms'
+                )
+                response_text = back_translation['translatedText']
+                print(f'transalated = {response_text}')
+                # Select speaker based on gender
+                speaker_name = "Osman" if gender == "Male" else "Yasmin"
+                
+                # Run the Malay TTS subprocess with translated response
+                tts_success = run_malay_tts(response_text, speaker_name, output_path)
+                
+                if not tts_success:
+                    print("Warning: Malay TTS subprocess failed. Using fallback message.")
+                    response_text = "Maaf, saya menghadapi masalah teknikal sekarang."
+                    # Try again with a simpler message
+                    run_malay_tts(response_text, speaker_name, output_path)
+                    
+            except Exception as translate_error:
+                print(f"Translation error: {translate_error}")
+                # Fallback to direct Malay response if translation fails
+                response_text = "Maaf, terdapat masalah dengan perkhidmatan terjemahan."
+                speaker_name = "Osman" if gender == "Male" else "Yasmin"
                 run_malay_tts(response_text, speaker_name, output_path)
         
         # Generate lipsync data
@@ -479,51 +644,3 @@ def process_speech(text, avatar_config=None):
             "audio_path": output_path,
             "mouth_cues": mouth_cues
         }
-
-def encode_audio_to_base64(audio_path):
-    """Convert audio file to base64 for transmission to frontend."""
-    try:
-        with open(audio_path, "rb") as audio_file:
-            encoded_audio = base64.b64encode(audio_file.read()).decode('utf-8')
-            return encoded_audio
-    except Exception as e:
-        print(f"Error encoding audio: {e}")
-        return None
-
-def play_audio():
-    """Play the generated audio file (no longer needed for frontend playback)."""
-    output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
-    playback_speech(output_path)
-
-# Load saved selections on module initialization
-try:
-    selections_file = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-        'data', 'avatar_selections.json'
-    )
-    if os.path.exists(selections_file):
-        with open(selections_file, 'r') as f:
-            current_avatar_selections.update(json.load(f))
-            print(f"Loaded avatar selections: {current_avatar_selections}")
-except Exception as e:
-    print(f"Warning: Could not load saved selections: {e}")
-
-# Initialize the models for the current language on application startup
-def initialize_models_for_current_language():
-    """
-    Pre-load the models for the current language setting upon startup
-    to reduce initial response time.
-    """
-    try:
-        language = current_avatar_selections.get("language", "English")
-        
-        print(f"Pre-loading models for language: {language}")
-        
-        if language == "English":
-            # Load English models
-            get_llama()
-            get_english_tts()
-        
-        print(f"Initial model loading complete. Loaded models: {loaded_models}")
-    except Exception as e:
-        print(f"Warning: Error during initial model loading: {e}")
