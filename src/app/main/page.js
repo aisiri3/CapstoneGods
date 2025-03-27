@@ -12,7 +12,6 @@ import * as THREE from "three";
 // import avatars (casual & professional)
 // Make sure these imports match your export style (default exports or named exports)
 import { Ahmad } from "@/components/avatar-components/ahmadAvatar";
-// Fix this import to match your export style
 import { AhmadFormal } from '@/components/avatar-components/ahmadFormalAvatar';
 import { Lana2Formal } from '@/components/avatar-components/LanaFormal2Avatar';
 import { Lana2Avatar } from '@/components/avatar-components/Lana2Avatar';
@@ -22,6 +21,8 @@ import { Maya } from '@/components/avatar-components/mayaAvatar';
 import { MayaFormal } from '@/components/avatar-components/mayaFormalAvatar';
 
 export default function MainPage() {
+  const audioRef = useRef(null);
+
   // Shared state for avatar data
   const [avatarState, setAvatarState] = useState({
     lipSync: null,
@@ -64,6 +65,13 @@ export default function MainPage() {
       responseLength: data.response ? data.response.length : 0,
       isFiller: !!data.isFiller
     });
+
+    // Stop and reset the previous audio if playing
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
     
     // If this is response audio (not a filler), make sure to clean up first
     if (!data.isFiller && data.audioUrl) {
@@ -140,6 +148,13 @@ export default function MainPage() {
     // Listen for avatar selection changes from the sidebar
     const handleSelectionChange = (event) => {
       console.log("Avatar selection changed:", event.detail);
+
+      // Stop and reset audio if playing
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
       
       // Clean up any existing audio URLs
       cleanupAudioResources();
