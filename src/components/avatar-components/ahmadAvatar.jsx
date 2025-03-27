@@ -17,12 +17,20 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale, isFill
   
   // State for intro and response lipsync
   const [introLipSyncData, setIntroLipSyncData] = useState(null);
-  const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response'
+  const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response' or 'filler'
   const [activeLipSync, setActiveLipSync] = useState(null);
 
+  // Track props changes for debugging
   useEffect(() => {
-      console.log("Morph target dictionary:", nodes.UnionAvatars_Head_1.morphTargetDictionary);
-    }, []);
+    console.log("Avatar props changed:", {
+      hasLipSyncData: !!lipSyncData,
+      audioUrl,
+      isFiller,
+      isPlaying,
+      animation: isPlaying ? "Playing" : "Not playing",
+      activeAudio
+    });
+  }, [lipSyncData, audioUrl, isFiller, isPlaying, activeAudio]);
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
@@ -126,6 +134,78 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale, isFill
 
   const [animation, setAnimation] = useState("Idle");
 
+  // Add this effect to handle component unmounting
+  useEffect(() => {
+    return () => {
+      console.log("Avatar component unmounting - cleaning up resources");
+      cleanupAudio();
+    };
+  }, []);
+
+  // Separate function to handle audio playback
+  const startAudioPlayback = (url, audioType, lipsyncData) => {
+    console.log(`Starting ${audioType} audio playback`, url);
+    
+    // Create new audio element
+    const audio = new Audio();
+    audio.src = url;
+    
+    // Set up event handlers
+    audio.onloadedmetadata = () => {
+      console.log(`${audioType} audio metadata loaded, duration:`, audio.duration);
+    };
+    
+    audio.oncanplay = () => {
+      console.log(`${audioType} audio ready to play`);
+    };
+    
+    audio.onplay = () => {
+      console.log(`${audioType} audio playback started`);
+      setIsPlaying(true);
+      setActiveLipSync(lipsyncData);
+      setAnimation("Talking");
+    };
+    
+    audio.onended = () => {
+      console.log(`${audioType} audio playback ended`);
+      setIsPlaying(false);
+      setAnimation("Idle");
+      
+      // Only update activeAudio if this was intro audio
+      if (activeAudio === 'intro' && !audioType.includes('filler')) {
+        setActiveAudio('response');
+      }
+    };
+    
+    audio.onerror = (e) => {
+      console.error(`Error with ${audioType} audio:`, e);
+      setIsPlaying(false);
+      setAnimation("Idle");
+    };
+    
+    // Store reference
+    audioRef.current = audio;
+    
+    // Play audio with retry logic
+    const playWithRetry = (retries = 3) => {
+      console.log(`Attempting to play ${audioType} audio (retries left: ${retries})`);
+      audio.play().catch(err => {
+        console.error(`Error playing ${audioType} audio:`, err);
+        if (retries > 0) {
+          console.log(`Retrying playback in 100ms...`);
+          setTimeout(() => playWithRetry(retries - 1), 100);
+        } else {
+          console.error(`Failed to play ${audioType} audio after multiple attempts`);
+          setIsPlaying(false);
+          setAnimation("Idle");
+        }
+      });
+    };
+    
+    // Start playback
+    playWithRetry();
+  };
+
   /* Set animation states based on playing/loading/otherwise */
   // Play intro audio when component mounts and intro lipsync data is loaded
   useEffect(() => {
@@ -173,71 +253,33 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale, isFill
 
   // Handle playing response or filler audio when provided
   useEffect(() => {
-    if (!audioUrl) return;
-
-    // Always clean up previous audio
+    console.log(`Audio effect triggered with URL: ${audioUrl}, isFiller: ${isFiller}`);
+    
+    // Always clean up previous audio regardless of what's coming next
     cleanupAudio();
     
+    if (!audioUrl) {
+      console.log("No audio URL provided, resetting state");
+      setIsPlaying(false);
+      setAnimation("Idle");
+      return;
+    }
+
     // Determine if we're handling a filler or a response
     const audioType = isFiller ? 'filler' : 'response';
     console.log(`Processing ${audioType} audio with URL:`, audioUrl);
     
-    // Skip if we're still in intro mode and this isn't a filler
-    if (activeAudio === 'intro' && !isFiller) {
-      console.log("Still in intro mode, ignoring non-filler audio");
-      return;
+    // Force a delay before starting response audio (if not a filler)
+    if (!isFiller) {
+      console.log("Response audio detected, adding delay before playback");
+      setTimeout(() => {
+        startAudioPlayback(audioUrl, audioType, lipSyncData);
+      }, 300); // Longer delay for response audio
+    } else {
+      // Start filler audio immediately
+      startAudioPlayback(audioUrl, audioType, lipSyncData);
     }
-    
-    // Create new audio element
-    const audio = new Audio();
-    audioRef.current = audio;
-    
-    // Set up new audio
-    audio.src = audioUrl;
-    
-    // Event handlers
-    audio.onplay = () => {
-      console.log(`${audioType} audio playback started`);
-      setIsPlaying(true);
-      setActiveLipSync(lipSyncData);
-      setAnimation("Talking");
-    };
-    
-    audio.onended = () => {
-      console.log(`${audioType} audio playback ended`);
-      setIsPlaying(false);
-      setAnimation("Idle");
-      
-      // Only update activeAudio if this was intro audio
-      if (activeAudio === 'intro') {
-        setActiveAudio('response');
-      }
-    };
-    
-    audio.onpause = () => {
-      setIsPlaying(false);
-      setAnimation("Idle");
-    };
-    
-    // Start playing the audio with a small delay
-    setTimeout(() => {
-      if (audioRef.current === audio) { // Only play if it's still the current audio
-        audio.play().catch(err => {
-          console.error(`Error playing ${audioType} audio:`, err);
-        });
-      }
-    }, 100);
-    
-    // Cleanup function
-    return () => {
-      if (audioRef.current === audio) {
-        audio.pause();
-        audio.onplay = null;
-        audio.onended = null;
-        audio.onpause = null;
-      }
-    };
-  }, [audioUrl, lipSyncData, isFiller, activeAudio]);
+  }, [audioUrl, lipSyncData, isFiller]);
 
   // Handle animation transitions
   useEffect(() => {
@@ -248,100 +290,83 @@ export function Ahmad({ lipSyncData, audioUrl, position, rotation, scale, isFill
       Object.values(actions).forEach(action => {
         if (action.isRunning()) {
           action.fadeOut(0.5);
-          // action.reset();
         }
       });
 
       // Play the new animation
       actions[animation].fadeIn(0.4).play();
-      // actions[animation].reset();
     }
   }, [animation, actions]);
 
-  // // Handle animation transitions
-  // useEffect(() => {
-  //   // Only fade in the new animation, don't reset old ones
-  //   actions[animation]
-  //     ?.reset() // Reset only the new animation before starting it
-  //     .fadeIn(mixer.time > 0 ? ANIMATION_FADE_TIME : 0)
-  //     .play();
-      
-  //   // This cleanup function runs when animation changes or component unmounts
-  //   // It properly fades out the previous animation without resetting it
-  //   return () => {
-  //     actions[animation]?.fadeOut(ANIMATION_FADE_TIME);
-  //   };
-  // }, [animation, actions, mixer.time]);
-
   return (
-    <group position={position} rotation={rotation} scale={scale} dispose={null} ref={group}>
-      <primitive object={nodes.Armature} />
-      <skinnedMesh 
-        geometry={nodes.UnionAvatars_Body.geometry} 
-        material={materials.UnionAvatars_Body} 
-        skeleton={nodes.UnionAvatars_Body.skeleton} 
-      />
-      <skinnedMesh 
-        geometry={nodes.UnionAvatars_Bottom.geometry} 
-        material={materials.UnionAvatars_Bottom} 
-        skeleton={nodes.UnionAvatars_Bottom.skeleton} 
-      />
-      <skinnedMesh 
-        geometry={nodes.UnionAvatars_Hair.geometry} 
-        material={materials.UnionAvatars_Hair} 
-        skeleton={nodes.UnionAvatars_Hair.skeleton} 
-      />
-      <skinnedMesh 
-        geometry={nodes.UnionAvatars_Shoes.geometry} 
-        material={materials.UnionAvatars_Shoes} 
-        skeleton={nodes.UnionAvatars_Shoes.skeleton} 
-      />
-      <skinnedMesh 
-        geometry={nodes.UnionAvatars_Top.geometry} 
-        material={materials.UnionAvatars_Top} 
-        skeleton={nodes.UnionAvatars_Top.skeleton} 
-      />
-
-      <skinnedMesh 
-        ref={headMeshRef}
-        name="UnionAvatars_Head_1"
-        geometry={nodes.UnionAvatars_Head_1.geometry}
-        material={materials.v3_phr_unionavatars_head_d}
-        skeleton={nodes.UnionAvatars_Head_1.skeleton}
-        morphTargetDictionary={nodes.UnionAvatars_Head_1.morphTargetDictionary}
-        morphTargetInfluences={nodes.UnionAvatars_Head_1.morphTargetInfluences}
-      />
-      
-      {/* LipSync controller for dynamically updating lip movements */}
-      {activeLipSync && isPlaying && (
-        <LipSyncController 
-          meshRef={headMeshRef}
-          rhubarbData={activeLipSync}
-          isPlaying={isPlaying}
-          audioElement={audioRef.current}
-        />
-      )}
-
-      <group name="UnionAvatars_Head">
+      <group position={position} rotation={rotation} scale={scale} dispose={null} ref={group}>
+        <primitive object={nodes.Armature} />
         <skinnedMesh 
-          name="UnionAvatars_Head_2" 
-          geometry={nodes.UnionAvatars_Head_2.geometry} 
+          geometry={nodes.UnionAvatars_Body.geometry} 
           material={materials.UnionAvatars_Body} 
-          skeleton={nodes.UnionAvatars_Head_2.skeleton} 
-          morphTargetDictionary={nodes.UnionAvatars_Head_2.morphTargetDictionary} 
-          morphTargetInfluences={nodes.UnionAvatars_Head_2.morphTargetInfluences} 
+          skeleton={nodes.UnionAvatars_Body.skeleton} 
         />
         <skinnedMesh 
-          name="UnionAvatars_Head_3" 
-          geometry={nodes.UnionAvatars_Head_3.geometry} 
-          material={materials.v3_phr_unionavatars_eye_ball_d} 
-          skeleton={nodes.UnionAvatars_Head_3.skeleton} 
-          morphTargetDictionary={nodes.UnionAvatars_Head_3.morphTargetDictionary} 
-          morphTargetInfluences={nodes.UnionAvatars_Head_3.morphTargetInfluences} 
+          geometry={nodes.UnionAvatars_Bottom.geometry} 
+          material={materials.UnionAvatars_Bottom} 
+          skeleton={nodes.UnionAvatars_Bottom.skeleton} 
         />
+        <skinnedMesh 
+          geometry={nodes.UnionAvatars_Hair.geometry} 
+          material={materials.UnionAvatars_Hair} 
+          skeleton={nodes.UnionAvatars_Hair.skeleton} 
+        />
+        <skinnedMesh 
+          geometry={nodes.UnionAvatars_Shoes.geometry} 
+          material={materials.UnionAvatars_Shoes} 
+          skeleton={nodes.UnionAvatars_Shoes.skeleton} 
+        />
+        <skinnedMesh 
+          geometry={nodes.UnionAvatars_Top.geometry} 
+          material={materials.UnionAvatars_Top} 
+          skeleton={nodes.UnionAvatars_Top.skeleton} 
+        />
+  
+        <skinnedMesh 
+          ref={headMeshRef}
+          name="UnionAvatars_Head_1"
+          geometry={nodes.UnionAvatars_Head_1.geometry}
+          material={materials.v3_phr_unionavatars_head_d}
+          skeleton={nodes.UnionAvatars_Head_1.skeleton}
+          morphTargetDictionary={nodes.UnionAvatars_Head_1.morphTargetDictionary}
+          morphTargetInfluences={nodes.UnionAvatars_Head_1.morphTargetInfluences}
+        />
+        
+        {/* LipSync controller for dynamically updating lip movements */}
+        {activeLipSync && isPlaying && (
+          <LipSyncController 
+            meshRef={headMeshRef}
+            rhubarbData={activeLipSync}
+            isPlaying={isPlaying}
+            audioElement={audioRef.current}
+          />
+        )}
+  
+        <group name="UnionAvatars_Head">
+          <skinnedMesh 
+            name="UnionAvatars_Head_2" 
+            geometry={nodes.UnionAvatars_Head_2.geometry} 
+            material={materials.UnionAvatars_Body} 
+            skeleton={nodes.UnionAvatars_Head_2.skeleton} 
+            morphTargetDictionary={nodes.UnionAvatars_Head_2.morphTargetDictionary} 
+            morphTargetInfluences={nodes.UnionAvatars_Head_2.morphTargetInfluences} 
+          />
+          <skinnedMesh 
+            name="UnionAvatars_Head_3" 
+            geometry={nodes.UnionAvatars_Head_3.geometry} 
+            material={materials.v3_phr_unionavatars_eye_ball_d} 
+            skeleton={nodes.UnionAvatars_Head_3.skeleton} 
+            morphTargetDictionary={nodes.UnionAvatars_Head_3.morphTargetDictionary} 
+            morphTargetInfluences={nodes.UnionAvatars_Head_3.morphTargetInfluences} 
+          />
+        </group>
       </group>
-    </group>
-  )
-}
-
-useGLTF.preload('/avatars/HeyAhmad.glb')
+    )
+  }
+  
+  useGLTF.preload('/avatars/HeyAhmad.glb')
