@@ -72,7 +72,7 @@ def malay_tts_workflow(input_text, speaker, output_path=None):
 
 if __name__ == "__main__":
     print("Running Malay TTS test...")
-    sample_text = "Harap bersabar semasa saya menyemak butirannya. Saya mengambil masa yang diperlukan untuk memastikan saya memberikan anda jawapan yang lengkap, tepat dan teliti. Ia hanya sebentar lagi. Saya memastikan untuk mengumpulkan semua perkara yang berkaitan, menyemak semula segala-galanya dan menyusun respons supaya berguna sebaik mungkin. Terima kasih atas pemahaman anda!"
-    output_file = malay_tts_workflow(sample_text, "Osman", "outputs/filler_1_o.wav")
-    output_file = malay_tts_workflow(sample_text, "Yasmin", "outputs/filler_1_y.wav")
-    print(f"Test complete. Audio generated: {output_file}") 
+    sample_text = 'Sementara saya menyediakan jawapan anda, izinkan saya berkongsi cara untuk memberi respons dalam mesyuarat. Baru-baru ini, kami sedang membincangkan satu projek baharu, dan pengurus saya bertanya, Bolehkah sesiapa memberikan kemas kini mengenai maklum balas klien?" Saya pun menjawab, "Ya, saya telah bercakap dengan klien awal hari ini. Mereka menyatakan bahawa mereka berpuas hati dengan kemajuan kita, tetapi ingin beberapa penyesuaian kecil pada reka bentuk. Apabila memberi respons dalam mesyuarat, adalah penting untuk bersikap jelas dan ringkas. Jika anda diminta memberikan maklumat, seperti "Bolehkah anda kongsikan pandangan anda mengenai cadangan ini?" anda boleh menjawab, "Saya rasa ini satu permulaan yang baik, tetapi saya cadangkan menambah lebih banyak data untuk menyokong hujah ini. Jika anda tidak mempunyai jawapan dengan segera, tidak mengapa untuk berkata, "Saya perlu menyemak dengan pasukan terlebih dahulu dan akan maklumkan semula." Dan jika seseorang meminta penjelasan lanjut, anda boleh bertanya, "Bolehkah anda terangkan dengan lebih lanjut tentang perkara itu?" atau "Saya ingin mendengar lebih banyak butiran mengenai perkara ini." Respon seperti ini membantu memastikan perbualan berjalan lancar dan menunjukkan bahawa anda terlibat secara aktif dalam perbincangan.'
+    output_file_m = malay_tts_workflow(sample_text, "Osman", "outputs/pro_filler_m.wav")
+    output_file_f = malay_tts_workflow(sample_text, "Yasmin", "outputs/pro_filler_f.wav")
+    print(f"Test complete. Audio generated: {output_file_f}")

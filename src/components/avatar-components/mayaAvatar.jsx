@@ -7,7 +7,7 @@ import { LipSyncController } from './lipsyncController'
 export function Maya({ lipSyncData, audioUrl, position, rotation, scale, isFiller }) {
   const headMeshRef = useRef();
   const audioRef = useRef(null);
-  const { scene } = useGLTF('/avatars/Mayaiseating.glb')
+  const { scene } = useGLTF('/avatars/Noor.glb')
   const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
   const { nodes, materials } = useGraph(clone)
   const group = useRef()
@@ -76,11 +76,11 @@ export function Maya({ lipSyncData, audioUrl, position, rotation, scale, isFille
       // Avatar is always smiling
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileLeft"]
-      ] = 0.4;
+      ] = 0.2;
 
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileRight"]
-      ] = 0.4;
+      ] = 0.2;
 
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeSquintLeft"]
@@ -303,4 +303,4 @@ export function Maya({ lipSyncData, audioUrl, position, rotation, scale, isFille
 }
 
 // Preload the GLB model
-useGLTF.preload('/avatars/Mayaiseating.glb')
+useGLTF.preload('/avatars/Noor.glb')
