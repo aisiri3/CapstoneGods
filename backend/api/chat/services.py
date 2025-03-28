@@ -89,9 +89,131 @@ def get_llama():
         loaded_models["llama"] = True
     return llama_model
 
+# def run_malay_tts(text, speaker, output_path):
+#     """
+#     Run the Malay TTS using a subprocess with the dedicated virtual environment.
+    
+#     Args:
+#         text (str): Text to convert to speech
+#         speaker (str): Speaker name ('Osman' for male, 'Yasmin' for female)
+#         output_path (str): Path to save the output audio file
+        
+#     Returns:
+#         bool: True if successful, False otherwise
+#     """
+#     try:
+#         # Get the current directory and build paths relative to it
+#         base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+#         print(f"Base directory: {base_dir}")
+        
+#         # Path to the mesolitica.py script
+#         script_path = os.path.join(base_dir, 'workflows', 'tts', 'mesolitica.py')
+#         print(f"Script path: {script_path}")
+        
+#         # Verify script exists
+#         if not os.path.exists(script_path):
+#             print(f"ERROR: Script file not found at: {script_path}")
+#             # Try to find the script
+#             for root, dirs, files in os.walk(base_dir):
+#                 if 'mesolitica.py' in files:
+#                     script_path = os.path.join(root, 'mesolitica.py')
+#                     print(f"Found script at: {script_path}")
+#                     break
+        
+#         # Path to the Python executable in the Malay venv
+#         if os.name == 'nt':  # Windows
+#             python_path = os.path.join(base_dir, 'venv-malay', 'Scripts', 'python.exe')
+#         else:  # Linux/Mac
+#             python_path = os.path.join(base_dir, 'venv-malay', 'bin', 'python')
+        
+#         print(f"Python path: {python_path}")
+        
+#         # Verify Python executable exists
+#         if not os.path.exists(python_path):
+#             print(f"ERROR: Python executable not found at: {python_path}")
+#             # Try to find python in venv-malay
+#             for root, dirs, files in os.walk(os.path.join(base_dir, 'venv-malay')):
+#                 for file in files:
+#                     if file == 'python.exe' or file == 'python':
+#                         python_path = os.path.join(root, file)
+#                         print(f"Found Python at: {python_path}")
+#                         break
+        
+#         # Ensure output directory exists (using absolute path)
+#         output_dir = os.path.dirname(os.path.abspath(output_path))
+#         os.makedirs(output_dir, exist_ok=True)
+#         print(f"Output directory: {output_dir}")
+        
+#         # Create a temporary file to hold the text with absolute path
+#         temp_text_file = os.path.join(output_dir, "temp_text.txt")
+#         print(f"Temp text file: {temp_text_file}")
+        
+#         with open(temp_text_file, "w", encoding="utf-8") as f:
+#             f.write(text)
+#             print(f"Text written to temp file: {text[:30]}...")
+        
+#         # Verify temp file was created
+#         if not os.path.exists(temp_text_file):
+#             print(f"ERROR: Failed to create temp file at: {temp_text_file}")
+#             return False
+            
+#         # Use absolute paths for everything in the command
+#         abs_output_path = os.path.abspath(output_path)
+        
+#         # Run the subprocess
+#         command = [
+#             python_path,
+#             script_path,
+#             "--text-file", temp_text_file,
+#             "--speaker", speaker,
+#             "--output", abs_output_path
+#         ]
+        
+#         print(f"Running Malay TTS subprocess with command: {' '.join(command)}")
+        
+#         # Run the subprocess and capture output
+#         result = subprocess.run(
+#             command, 
+#             capture_output=True,
+#             text=True
+#         )
+        
+#         # Print both stdout and stderr regardless of success
+#         if result.stdout:
+#             print(f"Malay TTS subprocess stdout: {result.stdout}")
+#         if result.stderr:
+#             print(f"Malay TTS subprocess stderr: {result.stderr}")
+            
+#         # Check return code
+#         if result.returncode != 0:
+#             print(f"Subprocess failed with return code: {result.returncode}")
+#             return False
+        
+#         # Clean up the temporary file
+#         try:
+#             if os.path.exists(temp_text_file):
+#                 os.remove(temp_text_file)
+#                 print("Temp file removed successfully")
+#         except Exception as cleanup_error:
+#             print(f"Warning: Failed to remove temp file: {cleanup_error}")
+        
+#         # Verify the output file was created
+#         if os.path.exists(abs_output_path):
+#             print(f"Success: Output file created at {abs_output_path}")
+#             return True
+#         else:
+#             print(f"ERROR: Output file was not created at {abs_output_path}")
+#             return False
+    
+#     except Exception as e:
+#         print(f"Error running Malay TTS subprocess: {e}")
+#         import traceback
+#         traceback.print_exc()
+#         return False
 def run_malay_tts(text, speaker, output_path):
     """
-    Run the Malay TTS using a subprocess with the dedicated virtual environment.
+    Run the Malay TTS using a subprocess with optimizations for speed.
+    Shows print statements from the TTS subprocess.
     
     Args:
         text (str): Text to convert to speech
@@ -101,24 +223,25 @@ def run_malay_tts(text, speaker, output_path):
     Returns:
         bool: True if successful, False otherwise
     """
+    import os
+    import subprocess
+    import time
+    import sys
+    
     try:
+        start_time = time.time()
+        print(f"Starting TTS for text: '{text[:30]}...'")
+        
         # Get the current directory and build paths relative to it
         base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        print(f"Base directory: {base_dir}")
         
-        # Path to the mesolitica.py script
-        script_path = os.path.join(base_dir, 'workflows', 'tts', 'mesolitica.py')
-        print(f"Script path: {script_path}")
+        # Path to the optimized mesolitica.py script
+        script_path = os.path.join(base_dir, 'workflows', 'tts', 'mesolitica_optimized.py')
         
-        # Verify script exists
+        # Fallback to original script if optimized version doesn't exist
         if not os.path.exists(script_path):
-            print(f"ERROR: Script file not found at: {script_path}")
-            # Try to find the script
-            for root, dirs, files in os.walk(base_dir):
-                if 'mesolitica.py' in files:
-                    script_path = os.path.join(root, 'mesolitica.py')
-                    print(f"Found script at: {script_path}")
-                    break
+            script_path = os.path.join(base_dir, 'workflows', 'tts', 'mesolitica.py')
+            print(f"Using original script at: {script_path}")
         
         # Path to the Python executable in the Malay venv
         if os.name == 'nt':  # Windows
@@ -126,91 +249,116 @@ def run_malay_tts(text, speaker, output_path):
         else:  # Linux/Mac
             python_path = os.path.join(base_dir, 'venv-malay', 'bin', 'python')
         
-        print(f"Python path: {python_path}")
-        
-        # Verify Python executable exists
-        if not os.path.exists(python_path):
-            print(f"ERROR: Python executable not found at: {python_path}")
-            # Try to find python in venv-malay
-            for root, dirs, files in os.walk(os.path.join(base_dir, 'venv-malay')):
-                for file in files:
-                    if file == 'python.exe' or file == 'python':
-                        python_path = os.path.join(root, file)
-                        print(f"Found Python at: {python_path}")
-                        break
-        
-        # Ensure output directory exists (using absolute path)
+        # Ensure output directory exists
         output_dir = os.path.dirname(os.path.abspath(output_path))
         os.makedirs(output_dir, exist_ok=True)
-        print(f"Output directory: {output_dir}")
         
-        # Create a temporary file to hold the text with absolute path
-        temp_text_file = os.path.join(output_dir, "temp_text.txt")
-        print(f"Temp text file: {temp_text_file}")
-        
-        with open(temp_text_file, "w", encoding="utf-8") as f:
-            f.write(text)
-            print(f"Text written to temp file: {text[:30]}...")
-        
-        # Verify temp file was created
-        if not os.path.exists(temp_text_file):
-            print(f"ERROR: Failed to create temp file at: {temp_text_file}")
-            return False
+        # Use direct text input for short texts (avoids file I/O)
+        if len(text) < 500:
+            command = [
+                python_path,
+                script_path,
+                "--text", text,
+                "--speaker", speaker,
+                "--output", os.path.abspath(output_path)
+            ]
+        else:
+            # Create a temporary file for longer texts
+            temp_text_file = os.path.join(output_dir, "temp_text.txt")
+            with open(temp_text_file, "w", encoding="utf-8") as f:
+                f.write(text)
             
-        # Use absolute paths for everything in the command
-        abs_output_path = os.path.abspath(output_path)
+            command = [
+                python_path,
+                script_path,
+                "--text-file", temp_text_file,
+                "--speaker", speaker,
+                "--output", os.path.abspath(output_path)
+            ]
         
-        # Run the subprocess
-        command = [
-            python_path,
-            script_path,
-            "--text-file", temp_text_file,
-            "--speaker", speaker,
-            "--output", abs_output_path
-        ]
+        # Add performance optimization flags
+        command.extend([
+            "--chunk-size", "150",  # Process text in smaller chunks
+            "--use-quantization",   # Enable INT8 quantization for CPU
+            "--use-jit",            # Enable JIT compilation
+            "--batch-size", "4"     # Process in batches of 4 chunks
+            # Disable half-precision by default to avoid compatibility issues
+            # "--use-half-precision"  # Uncomment only if you know your system supports it
+        ])
         
-        print(f"Running Malay TTS subprocess with command: {' '.join(command)}")
+        print(f"Running Malay TTS subprocess with command:")
+        print(" ".join(command))
         
-        # Run the subprocess and capture output
-        result = subprocess.run(
-            command, 
-            capture_output=True,
-            text=True
+        # Run the subprocess with real-time output forwarding
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,  # Line buffered
+            universal_newlines=True
         )
         
-        # Print both stdout and stderr regardless of success
-        if result.stdout:
-            print(f"Malay TTS subprocess stdout: {result.stdout}")
-        if result.stderr:
-            print(f"Malay TTS subprocess stderr: {result.stderr}")
-            
-        # Check return code
-        if result.returncode != 0:
-            print(f"Subprocess failed with return code: {result.returncode}")
-            return False
+        # Print real-time output
+        print("\n--- TTS Subprocess Output ---")
         
-        # Clean up the temporary file
+        # Function to handle output stream in real-time
+        def print_output(stream, prefix):
+            for line in iter(stream.readline, ''):
+                print(f"{prefix} {line.rstrip()}")
+                
+        # Create separate threads for stdout and stderr to avoid blocking
+        import threading
+        stdout_thread = threading.Thread(target=print_output, args=(process.stdout, "[TTS]"))
+        stderr_thread = threading.Thread(target=print_output, args=(process.stderr, "[TTS-ERROR]"))
+        
+        # Set as daemon threads so they exit when the main thread exits
+        stdout_thread.daemon = True
+        stderr_thread.daemon = True
+        
+        # Start the threads
+        stdout_thread.start()
+        stderr_thread.start()
+        
         try:
-            if os.path.exists(temp_text_file):
-                os.remove(temp_text_file)
-                print("Temp file removed successfully")
-        except Exception as cleanup_error:
-            print(f"Warning: Failed to remove temp file: {cleanup_error}")
-        
-        # Verify the output file was created
-        if os.path.exists(abs_output_path):
-            print(f"Success: Output file created at {abs_output_path}")
-            return True
-        else:
-            print(f"ERROR: Output file was not created at {abs_output_path}")
+            # Wait for the process to complete with timeout
+            return_code = process.wait(timeout=300)
+            # Give threads a moment to finish printing remaining output
+            stdout_thread.join(2)
+            stderr_thread.join(2)
+            print("--- End TTS Subprocess Output ---\n")
+            
+            # Clean up temporary file if it exists
+            if len(text) >= 500 and os.path.exists(temp_text_file):
+                try:
+                    os.remove(temp_text_file)
+                except Exception as cleanup_error:
+                    print(f"Warning: Failed to remove temp file: {cleanup_error}")
+            
+            # Check result
+            if return_code != 0:
+                print(f"TTS subprocess failed with return code: {return_code}")
+                return False
+            
+            # Verify output file was created
+            if os.path.exists(os.path.abspath(output_path)):
+                total_time = time.time() - start_time
+                print(f"TTS completed successfully in {total_time:.2f} seconds")
+                return True
+            else:
+                print(f"Error: Output file was not created at {output_path}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            print("TTS process timed out after 300 seconds")
+            process.kill()
             return False
-    
+            
     except Exception as e:
-        print(f"Error running Malay TTS subprocess: {e}")
+        print(f"Error running Malay TTS: {e}")
         import traceback
         traceback.print_exc()
         return False
-
 def generate_llama_response(prompt, persona=None, avatar_config=None):
     """Generate a response using the Llama model."""
     print("im here!!!!")
@@ -572,6 +720,7 @@ def process_speech_modified(text, avatar_config=None):
                 # Generate response using Llama (which works with English)
                 english_response = generate_llama_response(translated_input, avatar_config=config)
                 print(f'llama_response {english_response}')
+
                 # Translate response back from English to Malay
                 back_translation = translate_client.translate(
                     english_response,
@@ -579,8 +728,12 @@ def process_speech_modified(text, avatar_config=None):
                     target_language='ms'
                 )
                 response_text = back_translation['translatedText']
-                print(f'transalated = {response_text}')
-                # Select speaker based on gender
+
+                # Fix HTML entities in quotation marks
+                response_text = response_text.replace('&quot;', '"')
+
+                print(f'translated = {response_text}')
+                    # Select speaker based on gender
                 speaker_name = "Osman" if gender == "Male" else "Yasmin"
                 
                 # Run the Malay TTS subprocess with translated response
