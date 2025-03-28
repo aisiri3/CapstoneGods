@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import useFillerManager from "./FillerManager";
+// import useFillerManager from "./FillerManager";
+import useSingleFillerManager from "./SingleFillerManager";
 import "@/styles/Chat.css";
 
 export default function Chat({ onAvatarStateChange }) {
@@ -24,7 +25,7 @@ export default function Chat({ onAvatarStateChange }) {
   });
 
   // Initialize the filler manager with our avatar state callback
-  const fillerManager = useFillerManager(onAvatarStateChange);
+  const fillerManager = useSingleFillerManager(onAvatarStateChange);
   
   // Define intro messages based on language and persona
   const introMessages = {
@@ -260,7 +261,7 @@ export default function Chat({ onAvatarStateChange }) {
       conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
       
       // Start playing fillers while waiting for the response
-      fillerManager.startFillers();
+      fillerManager.playSingleFiller();
 
       try {
         // Send message to server and get response
@@ -295,9 +296,6 @@ export default function Chat({ onAvatarStateChange }) {
           isFiller: false
         };
         
-        // Signal that processing is done
-        setIsProcessing(false);
-        
         // Remove loading message
         if (conversationBoxRef.current.firstChild && conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
           conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
@@ -311,6 +309,9 @@ export default function Chat({ onAvatarStateChange }) {
         
         // Queue the response - the filler manager will handle the transition
         fillerManager.queueResponse(responseData);
+
+        // Signal that processing is done
+        setIsProcessing(false);
 
         // Scroll to bottom again
         conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;

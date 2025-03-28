@@ -17,14 +17,20 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
   
   // State for intro and response lipsync
   const [introLipSyncData, setIntroLipSyncData] = useState(null);
-  const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response'
+  const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response' or 'filler'
   const [activeLipSync, setActiveLipSync] = useState(null);
 
+  // Track props changes for debugging
   useEffect(() => {
-    if (nodes.UnionAvatars_Head_1 && nodes.UnionAvatars_Head_1.morphTargetDictionary) {
-      console.log("Morph target dictionary:", nodes.UnionAvatars_Head_1.morphTargetDictionary);
-    }
-  }, [nodes.UnionAvatars_Head_1]);
+    console.log("Avatar props changed:", {
+      hasLipSyncData: !!lipSyncData,
+      audioUrl,
+      isFiller,
+      isPlaying,
+      animation: isPlaying ? "Playing" : "Not playing",
+      activeAudio
+    });
+  }, [lipSyncData, audioUrl, isFiller, isPlaying, activeAudio]);
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
@@ -128,6 +134,78 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
 
   const [animation, setAnimation] = useState("Idle");
 
+  // Add this effect to handle component unmounting
+  useEffect(() => {
+    return () => {
+      console.log("Avatar component unmounting - cleaning up resources");
+      cleanupAudio();
+    };
+  }, []);
+
+  // Separate function to handle audio playback
+  const startAudioPlayback = (url, audioType, lipsyncData) => {
+    console.log(`Starting ${audioType} audio playback`, url);
+    
+    // Create new audio element
+    const audio = new Audio();
+    audio.src = url;
+    
+    // Set up event handlers
+    audio.onloadedmetadata = () => {
+      console.log(`${audioType} audio metadata loaded, duration:`, audio.duration);
+    };
+    
+    audio.oncanplay = () => {
+      console.log(`${audioType} audio ready to play`);
+    };
+    
+    audio.onplay = () => {
+      console.log(`${audioType} audio playback started`);
+      setIsPlaying(true);
+      setActiveLipSync(lipsyncData);
+      setAnimation("Talking");
+    };
+    
+    audio.onended = () => {
+      console.log(`${audioType} audio playback ended`);
+      setIsPlaying(false);
+      setAnimation("Idle");
+      
+      // Only update activeAudio if this was intro audio
+      if (activeAudio === 'intro' && !audioType.includes('filler')) {
+        setActiveAudio('response');
+      }
+    };
+    
+    audio.onerror = (e) => {
+      console.error(`Error with ${audioType} audio:`, e);
+      setIsPlaying(false);
+      setAnimation("Idle");
+    };
+    
+    // Store reference
+    audioRef.current = audio;
+    
+    // Play audio with retry logic
+    const playWithRetry = (retries = 3) => {
+      console.log(`Attempting to play ${audioType} audio (retries left: ${retries})`);
+      audio.play().catch(err => {
+        console.error(`Error playing ${audioType} audio:`, err);
+        if (retries > 0) {
+          console.log(`Retrying playback in 100ms...`);
+          setTimeout(() => playWithRetry(retries - 1), 100);
+        } else {
+          console.error(`Failed to play ${audioType} audio after multiple attempts`);
+          setIsPlaying(false);
+          setAnimation("Idle");
+        }
+      });
+    };
+    
+    // Start playback
+    playWithRetry();
+  };
+
   /* Set animation states based on playing/loading/otherwise */
   // Play intro audio when component mounts and intro lipsync data is loaded
   useEffect(() => {
@@ -175,71 +253,33 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
 
   // Handle playing response or filler audio when provided
   useEffect(() => {
-    if (!audioUrl) return;
-
-    // Always clean up previous audio
+    console.log(`Audio effect triggered with URL: ${audioUrl}, isFiller: ${isFiller}`);
+    
+    // Always clean up previous audio regardless of what's coming next
     cleanupAudio();
     
+    if (!audioUrl) {
+      console.log("No audio URL provided, resetting state");
+      setIsPlaying(false);
+      setAnimation("Idle");
+      return;
+    }
+
     // Determine if we're handling a filler or a response
     const audioType = isFiller ? 'filler' : 'response';
     console.log(`Processing ${audioType} audio with URL:`, audioUrl);
     
-    // Skip if we're still in intro mode and this isn't a filler
-    if (activeAudio === 'intro' && !isFiller) {
-      console.log("Still in intro mode, ignoring non-filler audio");
-      return;
+    // Force a delay before starting response audio (if not a filler)
+    if (!isFiller) {
+      console.log("Response audio detected, adding delay before playback");
+      setTimeout(() => {
+        startAudioPlayback(audioUrl, audioType, lipSyncData);
+      }, 300); // Longer delay for response audio
+    } else {
+      // Start filler audio immediately
+      startAudioPlayback(audioUrl, audioType, lipSyncData);
     }
-    
-    // Create new audio element
-    const audio = new Audio();
-    audioRef.current = audio;
-    
-    // Set up new audio
-    audio.src = audioUrl;
-    
-    // Event handlers
-    audio.onplay = () => {
-      console.log(`${audioType} audio playback started`);
-      setIsPlaying(true);
-      setActiveLipSync(lipSyncData);
-      setAnimation("Talking");
-    };
-    
-    audio.onended = () => {
-      console.log(`${audioType} audio playback ended`);
-      setIsPlaying(false);
-      setAnimation("Idle");
-      
-      // Only update activeAudio if this was intro audio
-      if (activeAudio === 'intro') {
-        setActiveAudio('response');
-      }
-    };
-    
-    audio.onpause = () => {
-      setIsPlaying(false);
-      setAnimation("Idle");
-    };
-    
-    // Start playing the audio with a small delay
-    setTimeout(() => {
-      if (audioRef.current === audio) { // Only play if it's still the current audio
-        audio.play().catch(err => {
-          console.error(`Error playing ${audioType} audio:`, err);
-        });
-      }
-    }, 100);
-    
-    // Cleanup function
-    return () => {
-      if (audioRef.current === audio) {
-        audio.pause();
-        audio.onplay = null;
-        audio.onended = null;
-        audio.onpause = null;
-      }
-    };
-  }, [audioUrl, lipSyncData, isFiller, activeAudio]);
+  }, [audioUrl, lipSyncData, isFiller]);
 
   // Handle animation transitions
   useEffect(() => {
