@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import "@/styles/Settings.css";
 import PersonaEvaluationDashboard from '@/components/PersonaEvaluationDashboard';
+import withAuth from '@/components/withAuth';
 
-export default function PersonaDeveloperTools() {
+function PersonaDeveloperTools() {
   const router = useRouter();
 
   const handleBack = () => {
@@ -40,3 +41,5 @@ export default function PersonaDeveloperTools() {
     </div>
   );
 }
+
+export default withAuth(PersonaDeveloperTools);

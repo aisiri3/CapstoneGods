@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { setAuth } from '@/utils/auth';
 import "@/styles/Auth.css";
 
-// Reuse the Label, Input, and Button components from the register form
 function Label({ htmlFor, children }) {
   return (
     <label htmlFor={htmlFor} className="block mt-2 text-sm font-medium text-gray-300">
@@ -25,13 +25,14 @@ function Input({ id, name, type = 'text', placeholder }) {
   );
 }
 
-function Button({ children, type = 'button', className, ariaDisabled, onClick }) {
+function Button({ children, type = 'button', className, ariaDisabled, onClick, disabled }) {
   return (
     <button
       type={type}
-      className={`px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${className}`}
-      aria-disabled={ariaDisabled}
+      className={`px-4 py-2 ${disabled ? 'bg-gray-500' : 'bg-indigo-600 hover:bg-indigo-700'} text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${className}`}
+      aria-disabled={ariaDisabled || disabled}
       onClick={onClick}
+      disabled={disabled}
     >
       {children}
     </button>
@@ -40,12 +41,13 @@ function Button({ children, type = 'button', className, ariaDisabled, onClick })
 
 export function SignInForm() {
   const router = useRouter();
-  const [error, setError] = useState(null);  // Store error messages
-  const [user, setUser] = useState(null);  // Store user info
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError(null);  // Reset error
+    setError(null);
+    setIsLoading(true);
 
     const formData = new FormData(event.target);
     const data = {
@@ -54,6 +56,8 @@ export function SignInForm() {
     };
 
     try {
+      console.log('Sending login request...');
+      
       // Send login data to the server
       const response = await fetch('/api/login', {
         method: 'POST',
@@ -64,26 +68,38 @@ export function SignInForm() {
       });
 
       const result = await response.json();
+      
       if (!response.ok) {
         throw new Error(result.error || "Wrong email or password, please try again");
       }
 
-      console.log(result.message);
+      console.log('Login successful', result);
 
-      // Store user info in local storage.
-      localStorage.setItem("user", JSON.stringify(result.user));
-      setUser(result.user);
+      // Check if we have the user data (token might not be visible due to HttpOnly)
+      if (!result.user) {
+        throw new Error('Invalid response from server: missing user data');
+      }
 
-      router.push("/main");  // Redirect on success
+      // Store auth data - this sets the cookie and localStorage
+      setAuth(result.token, result.user);
+      
+      console.log('Auth data stored, redirecting...');
+      
+      // Force direct navigation instead of router.push
+      // This bypasses any Next.js routing complications
+      window.location.href = "/main";
+      
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.message);
-      // console.error(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {error && <p className="text-red-700">{error}</p>}  {/* Show error messages */}
+      {error && <p className="text-red-700">{error}</p>}
 
       <div>
         <Label htmlFor="email">Email</Label>
@@ -95,18 +111,22 @@ export function SignInForm() {
         <Input id="password" name="password" type="password" required />
       </div>
 
-      <Button type="submit" className="mt-8 w-full">
-        Sign In
+      <Button 
+        type="submit" 
+        className="mt-8 w-full" 
+        disabled={isLoading}
+      >
+        {isLoading ? "Signing In..." : "Sign In"}
       </Button>
     </form>
   );
 }
 
+// You can remove this component if not needed
 export function SignInButton() {
-  const router = useRouter();
   const handleSignIn = (event) => {
-    event.preventDefault(); // Prevent form submission for now
-    router.push("/main"); // Navigate to main page
+    event.preventDefault();
+    window.location.href = "/main";
   };
 
   return (

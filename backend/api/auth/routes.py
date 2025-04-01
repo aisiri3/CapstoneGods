@@ -1,12 +1,18 @@
 """
-Authentication routes (Register and Login) for the API.
+Authentication routes (Register, Login, and Change Password) for the API.
 """
 from flask import request, jsonify
 from flask_restful import Resource
 import bcrypt
+import jwt
+from datetime import datetime, timedelta
+import os
 
 from extensions import mysql
 from api.auth.utils import validate_email, validate_password
+
+# Secret key for JWT - in production, store this in environment variables
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-secret-key-for-development')
 
 class Register(Resource):
     def post(self):
@@ -59,14 +65,23 @@ class Login(Resource):
         if not bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password.encode('utf-8')):
             return {"error": "Invalid password"}, 401
 
-        # Return user info (excluding password)
+        # Generate JWT token
+        token_payload = {
+            'user_id': user[0],
+            'email': user[2],
+            'exp': datetime.utcnow() + timedelta(days=7)  # Token expires in 7 days
+        }
+        token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
+
+        # Return user info and token
         return {
             "message": "Login successful",
             "user": {
                 "user_id": user[0],
                 "username": user[1],
                 "email": user[2]
-            }
+            },
+            "token": token
         }, 200
         
 class ChangePassword(Resource):
@@ -74,6 +89,24 @@ class ChangePassword(Resource):
         data = request.get_json()
         user_id = data.get('user_id')
         new_password = data.get('new_password')
+        
+        # Extract token from authorization header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return {"error": "Authorization token is missing"}, 401
+            
+        token = auth_header.split(' ')[1]
+        
+        # Verify token
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            # Check if token user_id matches the requested user_id
+            if payload['user_id'] != user_id:
+                return {"error": "Unauthorized access"}, 403
+        except jwt.ExpiredSignatureError:
+            return {"error": "Token has expired"}, 401
+        except jwt.InvalidTokenError:
+            return {"error": "Invalid token"}, 401
         
         if not user_id or not new_password:
             return {"error": "Missing fields"}, 400

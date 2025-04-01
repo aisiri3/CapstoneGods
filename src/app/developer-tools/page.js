@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import "@/styles/Settings.css";
 import ChatbotEvaluationDashboard from '@/components/ChatbotEvaluationDashboard';
+import withAuth from '@/components/withAuth';
 
-export default function DeveloperTools() {
+function DeveloperTools() {
   const router = useRouter();
 
   const handleBack = () => {
@@ -41,3 +42,5 @@ export default function DeveloperTools() {
     </div>
   );
 }
+
+export default withAuth(DeveloperTools);

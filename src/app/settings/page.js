@@ -5,15 +5,17 @@ import Link from 'next/link';
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { removeAuth, getUser, authHeader } from '@/utils/auth';
 import "@/styles/Auth.css";
 import "@/styles/Settings.css";
+import withAuth from '@/components/withAuth';
 
-export default function Settings() {
+function Settings() {
   const router = useRouter();
-  const [user, setUser] = useState(null); // Store user data
-  const [isLoading, setIsLoading] = useState(false); // Loading state for API calls
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // To change password
+  // Password state variables (existing code)
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -21,23 +23,42 @@ export default function Settings() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser) {
-      setUser(storedUser);
+    // Get user data from auth utilities
+    const userData = getUser();
+    if (!userData) {
+      // No user data found, redirect to login
+      router.push('/auth/signin');
+    } else {
+      setUser(userData);
     }
-  }, []);
+  }, [router]);
 
   const handleBack = () => {
     if (window.history.length > 1 && typeof window !== "undefined") {
-      router.back(); // Go back if there is history
+      router.back();
     } else {
-      router.push('/'); // Redirect to home if no history
+      router.push('/');
     }
   };
 
+  // Handle logout properly using auth utilities
+  const handleLogout = async () => {
+    setIsLoading(true);
+    try {
+      await removeAuth(); // Remove auth token and user data (async)
+      router.push('/auth/signin');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still try to redirect even if there's an error
+      router.push('/auth/signin');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Password-related functions (similar to existing)
   const handleNewPasswordChange = (e) => {
     setNewPassword(e.target.value);
-    // Clear the "same password" error when user starts typing a new password
     if (passwordError.includes("same as the current password")) {
       setPasswordError('');
     }
@@ -46,7 +67,6 @@ export default function Settings() {
 
   const handleConfirmPasswordChange = (e) => {
     setConfirmNewPassword(e.target.value);
-    // Clear the "same password" error when user starts typing a new confirmation
     if (passwordError.includes("same as the current password")) {
       setPasswordError('');
     }
@@ -54,8 +74,6 @@ export default function Settings() {
   };
 
   const validatePasswords = (password, confirmPassword) => {
-    // Only clear validation messages if there are no current API error messages
-    // This ensures API errors like "same password" don't get overwritten during typing
     if (!passwordError.includes("same as the current password")) {
       setPasswordError('');
       setPasswordSuccess('');
@@ -72,7 +90,6 @@ export default function Settings() {
     }
     
     if (password.length >= 8 && password === confirmPassword && confirmPassword.length > 0) {
-      // Only set success message if there's no API error about same password
       if (!passwordError.includes("same as the current password")) {
         setPasswordSuccess('Passwords match and are valid!');
       }
@@ -86,18 +103,17 @@ export default function Settings() {
     if (validatePasswords(newPassword, confirmNewPassword)) {
       try {
         setIsLoading(true);
-        
-        // Clear the success message before API call
         setPasswordSuccess('');
         
-        // Make API call to update password
+        // Include authentication headers
         const response = await fetch('/api/change-password', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...authHeader(), // Add auth header
           },
           body: JSON.stringify({
-            user_id: user.user_id, // Assuming your user object has user_id field
+            user_id: user.user_id,
             new_password: newPassword,
           }),
         });
@@ -105,22 +121,18 @@ export default function Settings() {
         const result = await response.json();
         
         if (!response.ok) {
-          // Check if it's the same password error (this is expected behavior, not an exception)
           if (result.error === "New password cannot be the same as the current password") {
-            setPasswordSuccess(''); // Clear any success message
+            setPasswordSuccess('');
             setPasswordError(result.error);
             return;
           }
-          // For other errors, throw an exception
           throw new Error(result.error || 'Failed to update password');
         }
         
-        // Password updated successfully
-        setPasswordError(''); // Clear any error message
+        setPasswordError('');
         setPasswordSuccess('Password updated successfully!');
         console.log('Password updated successfully');
         
-        // Clear the form after successful validation
         setTimeout(() => {
           setNewPassword('');
           setConfirmNewPassword('');
@@ -129,7 +141,7 @@ export default function Settings() {
         
       } catch (error) {
         console.error('Error updating password:', error);
-        setPasswordSuccess(''); // Clear any success message
+        setPasswordSuccess('');
         setPasswordError(error.message || 'An error occurred while updating your password');
       } finally {
         setIsLoading(false);
@@ -141,9 +153,9 @@ export default function Settings() {
     setShowPassword(!showPassword);
   };
 
+  // JSX for the component (simplified for brevity)
   return (
     <div className="settings-container">
-
       {/* Back button */}
       <div className="back-button">
         <button
@@ -160,64 +172,57 @@ export default function Settings() {
 
       {/* Left side */}
       <div className='split left'>
-      <div className='left-form z-1'>
-        <div className="left-heading font-bold text-center">Profile Information</div>
+        {/* User profile information */}
+        <div className='left-form z-1'>
+          <div className="left-heading font-bold text-center">Profile Information</div>
 
-        <div className="left-content-wrapper">
+          <div className="left-content-wrapper">
             <div className="left-content">
-                {/* Placeholder user icon */}
-                <Image
-                  className="user-placeholder object-center"
-                  src="/icons/user-placeholder.png"
-                  alt="User"
-                  width={200}
-                  height={200}
-                  priority
-                />
+              {/* User image and info */}
+              <Image
+                className="user-placeholder object-center"
+                src="/icons/user-placeholder.png"
+                alt="User"
+                width={200}
+                height={200}
+                priority
+              />
 
-                {/* Display user info */}
-                {user ? (
-                  <>
-                    <div className="mt-10 font-bold text-xl text-gray-100">{user.username}</div>
-                    <div className="text-l text-gray-400">{user.email}</div>
-                  </>
-                ) : (
-                  <div className="mt-4 text-gray-300">Loading user data...</div>
-                )}
+              {user ? (
+                <>
+                  <div className="mt-10 font-bold text-xl text-gray-100">{user.username}</div>
+                  <div className="text-l text-gray-400">{user.email}</div>
+                </>
+              ) : (
+                <div className="mt-4 text-gray-300">Loading user data...</div>
+              )}
 
-                {/* Log out button */}
-                <button
-                    onClick={() => {
-                      localStorage.removeItem("user");
-                      router.push('/auth/signin');
-                    }}
-                    className="mt-10 px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 w-40"
-                  >
-                    Log Out
+              {/* Log out button - Updated to use handleLogout */}
+              <button
+                onClick={handleLogout}
+                className="mt-10 px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 w-40"
+              >
+                Log Out
+              </button>
+
+              {/* Developer Tools button */}
+              <Link href="/developer-tools">
+                <button className="mt-5 bg-violet-800 hover:bg-violet-900 text-white py-2 px-4 rounded">
+                  Open Developer Mode
                 </button>
-
-                {/* Developer Tools button */}
-                <Link href="/developer-tools">
-                  <button className="mt-5 bg-violet-800 hover:bg-violet-900 text-white py-2 px-4 rounded">
-                    Open Developer Mode
-                  </button>
-                </Link>
-
+              </Link>
             </div>
+          </div>
         </div>
       </div>
 
-      </div>
-
-      {/* Right side */}
+      {/* Right side - Password Change */}
       <div className='split right'>
         <div className='right-form z-10'>
-          {/* User Settings -- Change password + Log out */}
           <div className="right-heading font-bold text-center">User Settings</div>
           
-
           <div className="right-content-wrapper">
-          <div className="subheading mb-6 font-bold text-gray-300 text-left">Change Password</div>
+            <div className="subheading mb-6 font-bold text-gray-300 text-left">Change Password</div>
 
             {/* New password */}
             <div className="mt-4">
@@ -281,10 +286,10 @@ export default function Settings() {
               {isLoading ? 'Updating...' : 'Save New Password'}
             </button>
           </div>
-
         </div>
       </div>
-
     </div>
   );
 }
+
+export default withAuth(Settings);

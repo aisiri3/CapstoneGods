@@ -1,27 +1,45 @@
-// forward login request to backend
+// pages/api/login.js - simplified version
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         try {
-            const { email, password } = req.body;  // Extract from request body
+            const { email, password } = req.body;
 
+            console.log('Login API: Sending request to backend...');
             const response = await fetch('http://localhost:8888/api/login', {  
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password }) // Send login data
+                body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error(data.error || 'Login failed'); // Show API error messages
+                console.error('Login API: Login failed:', data.error);
+                return res.status(response.status).json({ error: data.error || 'Login failed' });
             }
 
-            res.status(200).json(data);
+            console.log('Login API: Login successful');
+            
+            // Set a more compatible cookie
+            res.setHeader(
+                'Set-Cookie',
+                `authToken=${data.token}; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax`
+            );
+            
+            // Return success with token for client-side storage too
+            return res.status(200).json({
+                message: 'Login successful',
+                user: data.user,
+                token: data.token
+            });
+            
         } catch (error) {
-            res.status(500).json({ message: error.message });
+            console.error('Login API: Error:', error);
+            return res.status(500).json({ error: error.message || 'Internal server error' });
         }
     } else {
-        res.status(405).json({ message: 'Method Not Allowed' });
+        return res.status(405).json({ error: 'Method Not Allowed' });
     }
 }
