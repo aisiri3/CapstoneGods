@@ -70,14 +70,20 @@ export function SignInForm() {
       const result = await response.json();
       
       if (!response.ok) {
-        throw new Error(result.error || "Wrong email or password, please try again");
+        // Instead of throwing an error, just set the error message and return early
+        setError(result.error || "Wrong email or password, please try again");
+        setIsLoading(false);
+        return;
       }
 
       console.log('Login successful', result);
 
       // Check if we have the user data (token might not be visible due to HttpOnly)
       if (!result.user) {
-        throw new Error('Invalid response from server: missing user data');
+        // Instead of throwing, set error and return
+        setError('Invalid response from server: missing user data');
+        setIsLoading(false);
+        return;
       }
 
       // Store auth data - this sets the cookie and localStorage
@@ -86,12 +92,12 @@ export function SignInForm() {
       console.log('Auth data stored, redirecting...');
       
       // Force direct navigation instead of router.push
-      // This bypasses any Next.js routing complications
       window.location.href = "/main";
       
     } catch (err) {
+      // This catch block will only handle network errors or JSON parsing errors
       console.error('Login error:', err);
-      setError(err.message);
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
