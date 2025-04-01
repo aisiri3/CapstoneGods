@@ -37,17 +37,29 @@ export default function Settings() {
 
   const handleNewPasswordChange = (e) => {
     setNewPassword(e.target.value);
+    // Clear the "same password" error when user starts typing a new password
+    if (passwordError.includes("same as the current password")) {
+      setPasswordError('');
+    }
     validatePasswords(e.target.value, confirmNewPassword);
   };
 
   const handleConfirmPasswordChange = (e) => {
     setConfirmNewPassword(e.target.value);
+    // Clear the "same password" error when user starts typing a new confirmation
+    if (passwordError.includes("same as the current password")) {
+      setPasswordError('');
+    }
     validatePasswords(newPassword, e.target.value);
   };
 
   const validatePasswords = (password, confirmPassword) => {
-    setPasswordError('');
-    setPasswordSuccess('');
+    // Only clear validation messages if there are no current API error messages
+    // This ensures API errors like "same password" don't get overwritten during typing
+    if (!passwordError.includes("same as the current password")) {
+      setPasswordError('');
+      setPasswordSuccess('');
+    }
     
     if (password.length > 0 && password.length < 8) {
       setPasswordError('Password must be at least 8 characters long');
@@ -60,7 +72,10 @@ export default function Settings() {
     }
     
     if (password.length >= 8 && password === confirmPassword && confirmPassword.length > 0) {
-      setPasswordSuccess('Passwords match and are valid!');
+      // Only set success message if there's no API error about same password
+      if (!passwordError.includes("same as the current password")) {
+        setPasswordSuccess('Passwords match and are valid!');
+      }
       return true;
     }
     
@@ -71,6 +86,9 @@ export default function Settings() {
     if (validatePasswords(newPassword, confirmNewPassword)) {
       try {
         setIsLoading(true);
+        
+        // Clear the success message before API call
+        setPasswordSuccess('');
         
         // Make API call to update password
         const response = await fetch('/api/change-password', {
@@ -87,10 +105,18 @@ export default function Settings() {
         const result = await response.json();
         
         if (!response.ok) {
+          // Check if it's the same password error (this is expected behavior, not an exception)
+          if (result.error === "New password cannot be the same as the current password") {
+            setPasswordSuccess(''); // Clear any success message
+            setPasswordError(result.error);
+            return;
+          }
+          // For other errors, throw an exception
           throw new Error(result.error || 'Failed to update password');
         }
         
         // Password updated successfully
+        setPasswordError(''); // Clear any error message
         setPasswordSuccess('Password updated successfully!');
         console.log('Password updated successfully');
         
@@ -103,6 +129,7 @@ export default function Settings() {
         
       } catch (error) {
         console.error('Error updating password:', error);
+        setPasswordSuccess(''); // Clear any success message
         setPasswordError(error.message || 'An error occurred while updating your password');
       } finally {
         setIsLoading(false);

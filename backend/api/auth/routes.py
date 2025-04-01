@@ -74,24 +74,39 @@ class ChangePassword(Resource):
         data = request.get_json()
         user_id = data.get('user_id')
         new_password = data.get('new_password')
-
+        
         if not user_id or not new_password:
             return {"error": "Missing fields"}, 400
-
+            
         # Validate password
         if not validate_password(new_password):
             return {"error": "Password must be at least 8 characters"}, 400
-
-        # Hash the new password
-        hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
+            
         try:
-            # Update password in database
+            # First, retrieve the current password
             cur = mysql.connection.cursor()
+            cur.execute("SELECT Password FROM Users WHERE UserID = %s", (user_id,))
+            user = cur.fetchone()
+            
+            if not user:
+                cur.close()
+                return {"error": "User not found"}, 404
+                
+            current_hashed_password = user[0]
+            
+            # Check if new password matches the old password
+            if bcrypt.checkpw(new_password.encode('utf-8'), current_hashed_password.encode('utf-8')):
+                cur.close()
+                return {"error": "New password cannot be the same as the current password"}, 400
+                
+            # Hash the new password
+            hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            
+            # Update password in database
             cur.execute("UPDATE Users SET Password = %s WHERE UserID = %s", 
                       (hashed_password, user_id))
             
-            # Check if the update was successful (affected rows > 0)
+            # Check if the update was successful
             if cur.rowcount == 0:
                 mysql.connection.rollback()
                 cur.close()
