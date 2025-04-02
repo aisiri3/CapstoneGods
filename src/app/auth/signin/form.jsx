@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Eye, EyeOff } from 'lucide-react';
 import { setAuth } from '@/utils/auth';
 import "@/styles/Auth.css";
 
@@ -13,14 +14,17 @@ function Label({ htmlFor, children }) {
   );
 }
 
-function Input({ id, name, type = 'text', placeholder }) {
+function Input({ id, name, type = 'text', placeholder, value, onChange, required, className = "" }) {
   return (
     <input
       id={id}
       name={name}
       type={type}
       placeholder={placeholder}
-      className="mt-1 block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900"
+      value={value}
+      onChange={onChange}
+      required={required}
+      className={`mt-1 block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 ${className}`}
     />
   );
 }
@@ -43,16 +47,22 @@ export function SignInForm() {
   const router = useRouter();
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    const formData = new FormData(event.target);
     const data = {
-      email: formData.get('email'),
-      password: formData.get('password'),
+      email,
+      password,
     };
 
     try {
@@ -109,12 +119,42 @@ export function SignInForm() {
 
       <div>
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" placeholder="john@example.com" required />
+        <Input 
+          id="email" 
+          name="email" 
+          placeholder="john@example.com" 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required 
+        />
       </div>
 
       <div>
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" required />
+        <div className="relative">
+          <Input 
+            id="password" 
+            name="password" 
+            type={showPassword ? "text" : "password"} 
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="pr-10" // Add padding to the right for the eye icon
+          />
+          <button
+            type="button"
+            onClick={togglePasswordVisibility}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer text-gray-500 focus:outline-none"
+            style={{ color: "#4B5563" }}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? 
+              <Eye size={18} style={{ color: "#4B5563" }} /> : 
+              <EyeOff size={18} style={{ color: "#4B5563" }} />
+            }
+          </button>
+        </div>
       </div>
 
       <Button 

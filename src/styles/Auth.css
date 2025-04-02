@@ -33,3 +33,31 @@ h1 {
 p, label, input, button {
     font-size: 1rem;
 }
+
+.password-toggle-btn:hover {
+    color: inherit !important;
+    background-color: transparent !important;
+  }
+  
+  /* Ensure the button doesn't change appearance when active/focused */
+  .password-toggle-btn:active,
+  .password-toggle-btn:focus {
+    outline: none !important;
+    background-color: transparent !important;
+  }
+  
+  /* Specific styles for the password input container */
+  .password-input-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  
+  /* Ensure the eye icon is vertically centered and properly positioned */
+  .password-toggle-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: auto;
+    z-index: 10;
+  }
