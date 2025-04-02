@@ -15,9 +15,12 @@ function Settings() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Password state variables (existing code)
+  // Password state variables
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [currentPasswordVerified, setCurrentPasswordVerified] = useState(false);
+  const [currentPasswordMessage, setCurrentPasswordMessage] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -56,9 +59,58 @@ function Settings() {
     }
   };
 
-  // Password-related functions (similar to existing)
+  const handleCurrentPasswordChange = (e) => {
+    setCurrentPassword(e.target.value);
+    // Reset verification status when the current password changes
+    setCurrentPasswordVerified(false);
+    setCurrentPasswordMessage('');
+  };
+
+  // Verify the current password
+  const verifyCurrentPassword = async () => {
+    if (!currentPassword.trim()) {
+      setCurrentPasswordMessage('Please enter your current password');
+      setCurrentPasswordVerified(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('/api/verify-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeader(), // Add auth header
+        },
+        body: JSON.stringify({
+          user_id: user.user_id,
+          password: currentPassword,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        setCurrentPasswordMessage('The password you entered is incorrect. Please enter the correct password.');
+        setCurrentPasswordVerified(false);
+      } else {
+        setCurrentPasswordMessage('Current password entered is correct! Proceed to change your password below.');
+        setCurrentPasswordVerified(true);
+      }
+    } catch (error) {
+      console.error('Error verifying password:', error);
+      setCurrentPasswordMessage('An error occurred while verifying your password. Please try again.');
+      setCurrentPasswordVerified(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Password-related functions
   const handleNewPasswordChange = (e) => {
     setNewPassword(e.target.value);
+    // Reset error specifically about same password but keep verification status
     if (passwordError.includes("same as the current password")) {
       setPasswordError('');
     }
@@ -67,6 +119,7 @@ function Settings() {
 
   const handleConfirmPasswordChange = (e) => {
     setConfirmNewPassword(e.target.value);
+    // Reset error specifically about same password but keep verification status
     if (passwordError.includes("same as the current password")) {
       setPasswordError('');
     }
@@ -74,6 +127,7 @@ function Settings() {
   };
 
   const validatePasswords = (password, confirmPassword) => {
+    // Reset errors and success messages except for "same as current password" error
     if (!passwordError.includes("same as the current password")) {
       setPasswordError('');
       setPasswordSuccess('');
@@ -100,6 +154,13 @@ function Settings() {
   };
 
   const handleSavePassword = async () => {
+    // First check if current password has been verified
+    if (!currentPasswordVerified) {
+      setPasswordError('Please verify your current password first');
+      return;
+    }
+
+    // Then validate the new passwords
     if (validatePasswords(newPassword, confirmNewPassword)) {
       try {
         setIsLoading(true);
@@ -114,6 +175,7 @@ function Settings() {
           },
           body: JSON.stringify({
             user_id: user.user_id,
+            current_password: currentPassword, // Send current password for additional verification
             new_password: newPassword,
           }),
         });
@@ -133,7 +195,11 @@ function Settings() {
         setPasswordSuccess('Password updated successfully!');
         console.log('Password updated successfully');
         
+        // Reset fields after success
         setTimeout(() => {
+          setCurrentPassword('');
+          setCurrentPasswordVerified(false);
+          setCurrentPasswordMessage('');
           setNewPassword('');
           setConfirmNewPassword('');
           setPasswordSuccess('');
@@ -153,7 +219,7 @@ function Settings() {
     setShowPassword(!showPassword);
   };
 
-  // JSX for the component (simplified for brevity)
+  // JSX for the component
   return (
     <div className="settings-container">
       {/* Back button */}
@@ -224,6 +290,50 @@ function Settings() {
           <div className="right-content-wrapper">
             <div className="subheading mb-6 font-bold text-gray-300 text-left">Change Password</div>
 
+            {/* Current password with verify button */}
+            <div className="mt-4">
+              <label htmlFor="current-password" className="block text-sm font-medium text-gray-300">
+                Enter and verify your current password:
+              </label>
+              <div className="flex items-start gap-2">
+                <div className="relative password-input-container">
+                  <input 
+                    id="current-password"
+                    type={showPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={handleCurrentPasswordChange}
+                    placeholder="Current password..."
+                    className="mt-1 block w-full px-3 py-2 pr-10 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900"
+                  />
+                  <button 
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="password-toggle-btn"
+                    style={{ color: "#4B5563" }}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? 
+                      <Eye size={18} style={{ color: "#4B5563" }} /> : 
+                      <EyeOff size={18} style={{ color: "#4B5563" }} />
+                    }
+                  </button>
+                </div>
+                <button
+                  onClick={verifyCurrentPassword}
+                  disabled={isLoading || !currentPassword}
+                  className={`mt-1 ${isLoading ? 'bg-gray-500' : !currentPassword ? 'bg-gray-500' : 'bg-violet-800 hover:bg-violet-900'} text-white py-2 px-4 rounded`}
+                >
+                  Verify
+                </button>
+              </div>
+              {/* Current password verification message */}
+              {currentPasswordMessage && (
+                <div className={`mt-2 text-sm ${currentPasswordVerified ? 'text-green-500' : 'text-amber-500'}`}>
+                  {currentPasswordMessage}
+                </div>
+              )}
+            </div>
+
             {/* New password */}
             <div className="mt-4">
               <label htmlFor="new-password" className="block text-sm font-medium text-gray-300">
@@ -242,18 +352,19 @@ function Settings() {
                   type="button"
                   onClick={togglePasswordVisibility}
                   className="password-toggle-btn"
+                  style={{ color: "#4B5563" }}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? 
-                    <EyeOff size={18} className="text-gray-600" /> : 
-                    <Eye size={18} className="text-gray-600" />
+                    <Eye size={18} style={{ color: "#4B5563" }} /> : 
+                    <EyeOff size={18} style={{ color: "#4B5563" }} />
                   }
                 </button>
               </div>
             </div>
 
             {/* Confirm new password */}
-            <div className="mt-6">
+            <div className="mt-5">
               <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-300">
                 Confirm New Password
               </label>
@@ -280,8 +391,8 @@ function Settings() {
             {/* Save button */}
             <button
               onClick={handleSavePassword}
-              disabled={isLoading}
-              className={`mt-5 mb-5 ${isLoading ? 'bg-gray-500' : 'bg-violet-800 hover:bg-violet-900'} text-white py-2 px-4 w-60 rounded`}
+              disabled={isLoading || !currentPasswordVerified || !newPassword || !confirmNewPassword}
+              className={`mt-5 mb-5 ${isLoading || !currentPasswordVerified || !newPassword || !confirmNewPassword ? 'bg-gray-500' : 'bg-violet-800 hover:bg-violet-900'} text-white py-2 px-4 w-60 rounded`}
             >
               {isLoading ? 'Updating...' : 'Save New Password'}
             </button>

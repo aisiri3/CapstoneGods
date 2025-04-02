@@ -1,12 +1,12 @@
-// pages/api/change-password.js
+// pages/api/verify-password.js
 export default async function handler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
     }
     
-    const { user_id, current_password, new_password } = req.body;
+    const { user_id, password } = req.body;
     
-    if (!user_id || !current_password || !new_password) {
+    if (!user_id || !password) {
         return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -18,18 +18,14 @@ export default async function handler(req, res) {
     }
     
     try {
-        // Forward the request to the backend with the auth token
-        const response = await fetch("http://localhost:8888/api/change-password", {
+        // Forward the request to the backend
+        const response = await fetch("http://localhost:8888/api/verify-password", {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${authToken}`  // Add the auth token to the request
+                "Authorization": `Bearer ${authToken}`
             },
-            body: JSON.stringify({ 
-                user_id, 
-                current_password,
-                new_password
-            }),
+            body: JSON.stringify({ user_id, password }),
         });
         
         const data = await response.json();

@@ -88,6 +88,7 @@ class ChangePassword(Resource):
     def post(self):
         data = request.get_json()
         user_id = data.get('user_id')
+        current_password = data.get('current_password')  # Added current_password
         new_password = data.get('new_password')
         
         # Extract token from authorization header
@@ -108,7 +109,7 @@ class ChangePassword(Resource):
         except jwt.InvalidTokenError:
             return {"error": "Invalid token"}, 401
         
-        if not user_id or not new_password:
+        if not user_id or not current_password or not new_password:
             return {"error": "Missing fields"}, 400
             
         # Validate password
@@ -125,10 +126,15 @@ class ChangePassword(Resource):
                 cur.close()
                 return {"error": "User not found"}, 404
                 
-            current_hashed_password = user[0]
+            stored_hashed_password = user[0]
+            
+            # Verify current password
+            if not bcrypt.checkpw(current_password.encode('utf-8'), stored_hashed_password.encode('utf-8')):
+                cur.close()
+                return {"error": "Current password is incorrect"}, 401
             
             # Check if new password matches the old password
-            if bcrypt.checkpw(new_password.encode('utf-8'), current_hashed_password.encode('utf-8')):
+            if bcrypt.checkpw(new_password.encode('utf-8'), stored_hashed_password.encode('utf-8')):
                 cur.close()
                 return {"error": "New password cannot be the same as the current password"}, 400
                 
@@ -153,9 +159,61 @@ class ChangePassword(Resource):
         except Exception as e:
             mysql.connection.rollback()
             return {"error": f"Database error: {str(e)}"}, 500
+        
+class VerifyPassword(Resource):
+    def post(self):
+        data = request.get_json()
+        user_id = data.get('user_id')
+        password = data.get('password')
+        
+        # Extract token from authorization header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return {"error": "Authorization token is missing"}, 401
+            
+        token = auth_header.split(' ')[1]
+        
+        # Verify token
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            # Check if token user_id matches the requested user_id
+            if payload['user_id'] != user_id:
+                return {"error": "Unauthorized access"}, 403
+        except jwt.ExpiredSignatureError:
+            return {"error": "Token has expired"}, 401
+        except jwt.InvalidTokenError:
+            return {"error": "Invalid token"}, 401
+        
+        if not user_id or not password:
+            return {"error": "Missing fields"}, 400
+        
+        try:
+            # Retrieve the current password
+            cur = mysql.connection.cursor()
+            cur.execute("SELECT Password FROM Users WHERE UserID = %s", (user_id,))
+            user = cur.fetchone()
+            
+            if not user:
+                cur.close()
+                return {"error": "User not found"}, 404
+                
+            current_hashed_password = user[0]
+            
+            # Verify if provided password matches the stored password
+            password_correct = bcrypt.checkpw(password.encode('utf-8'), current_hashed_password.encode('utf-8'))
+            cur.close()
+            
+            if password_correct:
+                return {"message": "Password verified successfully"}, 200
+            else:
+                return {"error": "Incorrect password"}, 401
+                
+        except Exception as e:
+            return {"error": f"Database error: {str(e)}"}, 500
 
 def register_routes(api):
     """Register the authentication routes with the API."""
     api.add_resource(Register, '/register')
     api.add_resource(Login, '/login')
     api.add_resource(ChangePassword, '/change-password')
+    api.add_resource(VerifyPassword, '/verify-password')
