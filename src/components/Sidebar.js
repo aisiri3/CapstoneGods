@@ -141,7 +141,8 @@ export default function Sidebar() {
     
     // Provide feedback
     if (success) {
-      alert("Your selection has been saved!");
+      // alert("Your selection has been saved!");
+      setIsExpanded(!isExpanded);
     } else {
       // Even if backend fails, the frontend will still update
       alert("Your selection has been saved locally, but there was an issue updating the backend.");
