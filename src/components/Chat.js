@@ -263,6 +263,7 @@ export default function Chat({ onAvatarStateChange }) {
       // Start playing fillers while waiting for the response
       fillerManager.playSingleFiller();
 
+      // Update the error handling section in sendMessage function
       try {
         // Send message to server and get response
         const response = await fetch('/api/speak', {
@@ -296,16 +297,23 @@ export default function Chat({ onAvatarStateChange }) {
           isFiller: false
         };
         
-        // Remove loading message
-        if (conversationBoxRef.current.firstChild && conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
+        // Remove loading message - with additional null checks
+        if (conversationBoxRef.current && conversationBoxRef.current.firstChild && 
+            conversationBoxRef.current.firstChild.classList &&
+            conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
           conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
         }
 
-        // Display bot's response in chat
-        const botDiv = document.createElement("div");
-        botDiv.className = "outputMessage";
-        botDiv.innerText = data.response;
-        conversationBoxRef.current.prepend(botDiv);
+        // Display bot's response in chat - with null check
+        if (conversationBoxRef.current) {
+          const botDiv = document.createElement("div");
+          botDiv.className = "outputMessage";
+          botDiv.innerText = data.response;
+          conversationBoxRef.current.prepend(botDiv);
+          
+          // Scroll to bottom again
+          conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
+        }
         
         // Queue the response - the filler manager will handle the transition
         fillerManager.queueResponse(responseData);
@@ -313,24 +321,26 @@ export default function Chat({ onAvatarStateChange }) {
         // Signal that processing is done
         setIsProcessing(false);
 
-        // Scroll to bottom again
-        conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
       } catch (error) {
         console.error("Error processing message:", error);
         
         // Stop playing fillers
         await fillerManager.stopAllFillers();
         
-        // Remove loading message
-        if (conversationBoxRef.current.firstChild && conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
+        // Remove loading message - with additional null checks
+        if (conversationBoxRef.current && conversationBoxRef.current.firstChild && 
+            conversationBoxRef.current.firstChild.classList &&
+            conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
           conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
         }
         
-        // Display error message
-        const errorDiv = document.createElement("div");
-        errorDiv.className = "errorMessage";
-        errorDiv.innerText = "Sorry, there was an error processing your message.";
-        conversationBoxRef.current.prepend(errorDiv);
+        // Display error message - with null check
+        if (conversationBoxRef.current) {
+          const errorDiv = document.createElement("div");
+          errorDiv.className = "errorMessage";
+          errorDiv.innerText = "Sorry, there was an error processing your message.";
+          conversationBoxRef.current.prepend(errorDiv);
+        }
         
         // Set processing to false
         setIsProcessing(false);
