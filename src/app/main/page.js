@@ -8,6 +8,7 @@ import "@/styles/MainPage.css";
 import { Environment, OrbitControls } from '@react-three/drei';
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import withAuth from '@/components/withAuth';
 
 // import avatars (casual & professional)
 // Make sure these imports match your export style (default exports or named exports)
@@ -20,7 +21,7 @@ import { AdamFormal } from '@/components/avatar-components/adamFormalAvatar';
 import { Maya } from '@/components/avatar-components/mayaAvatar';
 import { MayaFormal } from '@/components/avatar-components/mayaFormalAvatar';
 
-export default function MainPage() {
+function MainPage() {
   const audioRef = useRef(null);
 
   // Shared state for avatar data
@@ -336,3 +337,5 @@ export default function MainPage() {
     </div>
   );
 }
+
+export default withAuth(MainPage);

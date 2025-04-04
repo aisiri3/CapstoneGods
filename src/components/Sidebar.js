@@ -1,18 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import "@/styles/SideBar.css";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/Tooltip";
 // icons
 import { AlignLeft, AlignRight, ChevronDown, Settings, UserPen, Check } from "lucide-react";
+import { TbMusic, TbMusicOff } from "react-icons/tb";
+
+import audioManager from "@/utils/audioManager";
 
 export default function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [user, setUser] = useState(null); // Store user data
   const [isSending, setIsSending] = useState(false);
+  const [isMusicOn, setIsMusicOn] = useState(false);
+  const [activeMusicPersona, setActiveMusicPersona] = useState("Casual");
+  const [musicVolume, setMusicVolume] = useState(0.8); // Default to match audioManager.normalVolume
+  const audioRef = useRef(null);
+  const audioInitialized = useRef(false);
+  const currentMusicFile = useRef("/backgrounds/cafe-music.mp3");
+  const maxVolume = 1.5; // Maximum volume multiplier
   
   // Default selections
   const defaultSelections = {
@@ -27,6 +37,105 @@ export default function Sidebar() {
   // Last saved selections
   const [lastSavedSelections, setLastSavedSelections] = useState({...defaultSelections});
 
+  // Helper function to get the appropriate music file based on persona
+  const getMusicFileForPersona = (persona) => {
+    switch(persona) {
+      case "Professional":
+        return "/backgrounds/office-music.mp3";
+      case "Casual":
+      default:
+        return "/backgrounds/cafe-music.mp3";
+    }
+  };
+
+  // Function to handle volume change
+  const handleVolumeChange = (e) => {
+    // Get the raw slider value (0 to 1.5 range)
+    const sliderValue = parseFloat(e.target.value);
+    setMusicVolume(sliderValue);
+    
+    // Store user's volume preference (the slider value)
+    localStorage.setItem("musicVolume", sliderValue.toString());
+    
+    // Ensure the actual audio volume stays within valid HTML Audio range (0-1)
+    // This allows the slider to go beyond 1 for user perception of "extra loud"
+    // but prevents actual volume from exceeding browser limits
+    const actualVolume = Math.min(sliderValue, 1.0);
+    
+    // Update the audio manager's normal volume
+    audioManager.normalVolume = actualVolume;
+    
+    // Apply normalization
+    audioManager.applyVolumeNormalization();
+  };
+
+  // Function to update background music based on persona
+  const updateBackgroundMusic = (newPersona) => {
+    const newMusicFile = getMusicFileForPersona(newPersona);
+    
+    // If music file is the same, no need to change
+    if (newMusicFile === currentMusicFile.current) {
+      // Just update the active persona without changing the music
+      setActiveMusicPersona(newPersona);
+      return;
+    }
+    
+    // Update the current music file
+    currentMusicFile.current = newMusicFile;
+    
+    // Update the active music persona
+    setActiveMusicPersona(newPersona);
+    
+    // If music is currently playing, we need to change the track
+    if (isMusicOn) {
+      try {
+        // First stop current music (ensure it's fully stopped)
+        audioManager.toggleBackgroundMusic(false);
+        
+        // Small delay to ensure audio has time to properly stop and clean up
+        const switchDelay = setTimeout(() => {
+          try {
+            // Clear old audio reference completely
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current.src = "";
+              audioRef.current = null;
+            }
+            
+            // Create a new audio element with the new music
+            audioRef.current = new Audio(newMusicFile);
+            audioManager.setBackgroundMusic(audioRef.current);
+            
+            // Start playing the new music
+            audioManager.toggleBackgroundMusic(true);
+          } catch (innerError) {
+            console.error("Error creating new audio after delay:", innerError);
+          }
+          
+          // Clear the timeout reference
+          clearTimeout(switchDelay);
+        }, 150); // Increase delay to ensure complete cleanup
+      } catch (error) {
+        console.error("Error switching music tracks:", error);
+      }
+    } else {
+      // Just update the audio source without playing
+      try {
+        // Properly clean up existing audio element
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        }
+        
+        // Create new audio element
+        audioRef.current = new Audio(newMusicFile);
+        audioManager.setBackgroundMusic(audioRef.current);
+      } catch (error) {
+        console.error("Error updating audio source:", error);
+      }
+    }
+  }
+
   // fetch user info for display (from localStorage)
   useEffect(() => {
     // Retrieve user info from localStorage
@@ -40,10 +149,75 @@ export default function Sidebar() {
     if (storedSelections) {
       setSelections(storedSelections);
       setLastSavedSelections(storedSelections);
+      
+      // Set the active music persona based on stored selections
+      setActiveMusicPersona(storedSelections.persona);
+      
+      // Set the music file based on stored persona
+      currentMusicFile.current = getMusicFileForPersona(storedSelections.persona);
     } else {
       // If no stored selections, save the defaults
       localStorage.setItem("userSelections", JSON.stringify(defaultSelections));
     }
+
+    // Check if music preference is stored in localStorage
+    const musicPreference = localStorage.getItem("musicOn") === "true";
+    setIsMusicOn(musicPreference);
+    
+    // Check if volume preference is stored in localStorage
+    const storedVolume = localStorage.getItem("musicVolume");
+    if (storedVolume) {
+      const parsedVolume = parseFloat(storedVolume);
+      if (!isNaN(parsedVolume)) {
+        setMusicVolume(parsedVolume);
+        audioManager.normalVolume = parsedVolume;
+      }
+    }
+
+    // Initialize audio through the audio manager (only once)
+    if (!audioInitialized.current) {
+      try {
+        audioRef.current = new Audio(currentMusicFile.current);
+        audioManager.setBackgroundMusic(audioRef.current);
+        audioInitialized.current = true;
+        
+        // Apply saved music preference
+        if (musicPreference) {
+          audioManager.toggleBackgroundMusic(true);
+        }
+      } catch (error) {
+        console.error("Error initializing audio:", error);
+      }
+    }
+
+    // Patch Audio constructor to ensure all new audio instances are registered
+    try {
+      audioManager.monkeyPatchAudioConstructor();
+    } catch (error) {
+      console.error("Error patching Audio constructor:", error);
+    }
+
+    // Set up event listener for avatar selection changes
+    const handleAvatarSelectionChange = (event) => {
+      if (event.detail && event.detail.persona) {
+        updateBackgroundMusic(event.detail.persona);
+      }
+    };
+    
+    window.addEventListener('avatarSelectionChanged', handleAvatarSelectionChange);
+
+    // Cleanup on component unmount
+    return () => {
+      try {
+        if (isMusicOn) {
+          audioManager.toggleBackgroundMusic(false);
+        }
+        
+        window.removeEventListener('avatarSelectionChanged', handleAvatarSelectionChange);
+      } catch (error) {
+        console.error("Error cleaning up audio:", error);
+      }
+    };
   }, []);
 
   const toggleSidebar = () => {
@@ -73,10 +247,12 @@ export default function Sidebar() {
   
   // Function to handle selection of an option
   const handleSelection = (category, value) => {
-    setSelections(prev => ({
-      ...prev,
+    const newSelections = {
+      ...selections,
       [category]: value
-    }));
+    };
+    
+    setSelections(newSelections);
   };
   
   // Function to check if selections have changed from last saved state
@@ -84,6 +260,25 @@ export default function Sidebar() {
     return Object.keys(selections).some(key => 
       selections[key] !== lastSavedSelections[key]
     );
+  };
+
+  // Function to toggle music on/off
+  const toggleMusic = () => {
+    try {
+      const newMusicState = !isMusicOn;
+      setIsMusicOn(newMusicState);
+      localStorage.setItem("musicOn", newMusicState.toString());
+      
+      if (!newMusicState && audioRef.current) {
+        // Explicitly pause the audio element as a backup
+        audioRef.current.pause();
+      }
+      
+      // Use the audio manager to handle the toggle
+      audioManager.toggleBackgroundMusic(newMusicState);
+    } catch (error) {
+      console.error("Error toggling music:", error);
+    }
   };
 
   // Function to send selections to the backend
@@ -130,6 +325,15 @@ export default function Sidebar() {
     // Send selections to backend
     const success = await sendSelectionsToBackend(selections);
     
+    // Check if persona changed and update music if needed
+    if (lastSavedSelections.persona !== selections.persona) {
+      try {
+        updateBackgroundMusic(selections.persona);
+      } catch (error) {
+        console.error("Error updating background music:", error);
+      }
+    }
+    
     // Dispatch a custom event to notify other components about the selection change
     const event = new CustomEvent('avatarSelectionChanged', { 
       detail: { ...selections }
@@ -141,7 +345,8 @@ export default function Sidebar() {
     
     // Provide feedback
     if (success) {
-      alert("Your selection has been saved!");
+      // alert("Your selection has been saved!");
+      setIsExpanded(!isExpanded);
     } else {
       // Even if backend fails, the frontend will still update
       alert("Your selection has been saved locally, but there was an issue updating the backend.");
@@ -169,6 +374,9 @@ export default function Sidebar() {
       submenu: ["English", "Malay"],
     },
   ];
+
+  // Calculate default slider position (66% of max)
+  const defaultSliderPosition = maxVolume * 0.66;
 
   return (
     <div className="sidebar-container">
@@ -253,6 +461,50 @@ export default function Sidebar() {
           )}
         </div>
 
+        {/* Music Toggle */}
+        <div className="music-toggle">
+          <TooltipProvider delayDuration={70}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="sidebar-icon" onClick={toggleMusic}>
+                  {isMusicOn ? 
+                    <TbMusic size={32} style={{ color: "#b77beb" }} /> : 
+                    <TbMusicOff size={32} style={{ color: "#8a7b97" }} />
+                  }
+                  {/* Volume slider when expanded */}
+                  {isExpanded && isMusicOn ? (
+                    <div className="volume-slider-container" onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max={maxVolume} 
+                        step="0.01"
+                        value={musicVolume}
+                        onChange={handleVolumeChange}
+                        className="volume-slider"
+                      />
+                      <span className="music-type">
+                        {activeMusicPersona === "Professional" ? "Office" : "Cafe"}
+                      </span>
+                    </div>
+                  ) : isExpanded ? (
+                    <span>Music Off</span>
+                  ) : null}
+                </div>
+              </TooltipTrigger>
+              {!isExpanded && (
+                <TooltipContent side="right" className="px-3 py-1.5 text-xs tooltip">
+                  <span>
+                    {isMusicOn 
+                      ? (activeMusicPersona === "Professional" ? "Office Music On" : "Cafe Music On") 
+                      : "Music Off"}
+                  </span>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
         {/* Settings */}
         <div className="settings-item">
           <TooltipProvider delayDuration={70}>
@@ -280,8 +532,8 @@ export default function Sidebar() {
             <Image
               src="/icons/user-placeholder.png"
               alt="User"
-              width={35}
-              height={35}
+              width={32}
+              height={32}
               className="sidebar-custom-icon"
               priority
             />

@@ -174,3 +174,26 @@ input:focus {
     height: 200px;
     object-position: center;
 }
+
+/* Remove hover effect from password toggle button */
+.password-toggle-btn:hover {
+    color: inherit;
+    background-color: transparent;
+  }
+  
+  /* Ensure the SVG icon maintains its color on hover */
+  .password-toggle-btn:hover svg {
+    color: #4B5563; /* Equivalent to text-gray-600 */
+  }
+  
+  /* Add a specific class to override any global hover effects */
+  .password-toggle-btn {
+    pointer-events: auto;
+  }
+  
+  /* Make sure the button doesn't change appearance when active/focused */
+  .password-toggle-btn:active,
+  .password-toggle-btn:focus {
+    outline: none;
+    background-color: transparent;
+  }
