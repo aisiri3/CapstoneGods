@@ -51,6 +51,8 @@ export default function Sidebar() {
     
     // If music file is the same, no need to change
     if (newMusicFile === currentMusicFile.current) {
+      // Just update the active persona without changing the music
+      setActiveMusicPersona(newPersona);
       return;
     }
     
@@ -66,24 +68,49 @@ export default function Sidebar() {
         // First stop current music (ensure it's fully stopped)
         audioManager.toggleBackgroundMusic(false);
         
-        // Small delay to ensure audio has time to properly stop
-        setTimeout(() => {
-          // Create a new audio element with the new music
-          audioRef.current = new Audio(newMusicFile);
-          audioManager.setBackgroundMusic(audioRef.current);
+        // Small delay to ensure audio has time to properly stop and clean up
+        const switchDelay = setTimeout(() => {
+          try {
+            // Clear old audio reference completely
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current.src = "";
+              audioRef.current = null;
+            }
+            
+            // Create a new audio element with the new music
+            audioRef.current = new Audio(newMusicFile);
+            audioManager.setBackgroundMusic(audioRef.current);
+            
+            // Start playing the new music
+            audioManager.toggleBackgroundMusic(true);
+          } catch (innerError) {
+            console.error("Error creating new audio after delay:", innerError);
+          }
           
-          // Start playing the new music
-          audioManager.toggleBackgroundMusic(true);
-        }, 50);
+          // Clear the timeout reference
+          clearTimeout(switchDelay);
+        }, 150); // Increase delay to ensure complete cleanup
       } catch (error) {
         console.error("Error switching music tracks:", error);
       }
     } else {
       // Just update the audio source without playing
-      audioRef.current = new Audio(newMusicFile);
-      audioManager.setBackgroundMusic(audioRef.current);
+      try {
+        // Properly clean up existing audio element
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        }
+        
+        // Create new audio element
+        audioRef.current = new Audio(newMusicFile);
+        audioManager.setBackgroundMusic(audioRef.current);
+      } catch (error) {
+        console.error("Error updating audio source:", error);
+      }
     }
-  };
+  }
 
   // fetch user info for display (from localStorage)
   useEffect(() => {

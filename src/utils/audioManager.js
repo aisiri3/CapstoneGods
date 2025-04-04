@@ -5,7 +5,7 @@ class AudioManager {
       this.backgroundMusic = null;
       this.activeAudios = new Set();
       this.normalVolume = 0.8; // Default volume for background music
-      this.loweredVolume = 0.2; // Volume when other audio is playing
+      this.loweredVolume = 0.5; // Volume when other audio is playing
       this.isBackgroundMusicOn = false;
       this.volumeRestoreTimeout = null; // For delayed volume restoration
       this.fadeInterval = null; // For gradual volume increase
@@ -19,7 +19,7 @@ class AudioManager {
         "/backgrounds/office-music.mp3": 0.5    // Adjust this value to balance with cafe music
       };
       
-      // Current music source path
+      // Current music source pat
       this.currentMusicPath = "";
       
       // Track recently played speech files to prevent echo
