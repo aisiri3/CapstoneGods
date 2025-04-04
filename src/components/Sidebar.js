@@ -16,6 +16,7 @@ export default function Sidebar() {
   const [user, setUser] = useState(null); // Store user data
   const [isSending, setIsSending] = useState(false);
   const [isMusicOn, setIsMusicOn] = useState(false);
+  const [activeMusicPersona, setActiveMusicPersona] = useState("Casual");
   const audioRef = useRef(null);
   const audioInitialized = useRef(false);
   const currentMusicFile = useRef("/backgrounds/cafe-music.mp3");
@@ -56,17 +57,27 @@ export default function Sidebar() {
     // Update the current music file
     currentMusicFile.current = newMusicFile;
     
+    // Update the active music persona
+    setActiveMusicPersona(newPersona);
+    
     // If music is currently playing, we need to change the track
     if (isMusicOn) {
-      // First stop current music
-      audioManager.toggleBackgroundMusic(false);
-      
-      // Create a new audio element with the new music
-      audioRef.current = new Audio(newMusicFile);
-      audioManager.setBackgroundMusic(audioRef.current);
-      
-      // Start playing the new music
-      audioManager.toggleBackgroundMusic(true);
+      try {
+        // First stop current music (ensure it's fully stopped)
+        audioManager.toggleBackgroundMusic(false);
+        
+        // Small delay to ensure audio has time to properly stop
+        setTimeout(() => {
+          // Create a new audio element with the new music
+          audioRef.current = new Audio(newMusicFile);
+          audioManager.setBackgroundMusic(audioRef.current);
+          
+          // Start playing the new music
+          audioManager.toggleBackgroundMusic(true);
+        }, 50);
+      } catch (error) {
+        console.error("Error switching music tracks:", error);
+      }
     } else {
       // Just update the audio source without playing
       audioRef.current = new Audio(newMusicFile);
@@ -88,6 +99,9 @@ export default function Sidebar() {
       setSelections(storedSelections);
       setLastSavedSelections(storedSelections);
       
+      // Set the active music persona based on stored selections
+      setActiveMusicPersona(storedSelections.persona);
+      
       // Set the music file based on stored persona
       currentMusicFile.current = getMusicFileForPersona(storedSelections.persona);
     } else {
@@ -101,18 +115,26 @@ export default function Sidebar() {
 
     // Initialize audio through the audio manager (only once)
     if (!audioInitialized.current) {
-      audioRef.current = new Audio(currentMusicFile.current);
-      audioManager.setBackgroundMusic(audioRef.current);
-      audioInitialized.current = true;
-      
-      // Apply saved music preference
-      if (musicPreference) {
-        audioManager.toggleBackgroundMusic(true);
+      try {
+        audioRef.current = new Audio(currentMusicFile.current);
+        audioManager.setBackgroundMusic(audioRef.current);
+        audioInitialized.current = true;
+        
+        // Apply saved music preference
+        if (musicPreference) {
+          audioManager.toggleBackgroundMusic(true);
+        }
+      } catch (error) {
+        console.error("Error initializing audio:", error);
       }
     }
 
     // Patch Audio constructor to ensure all new audio instances are registered
-    audioManager.monkeyPatchAudioConstructor();
+    try {
+      audioManager.monkeyPatchAudioConstructor();
+    } catch (error) {
+      console.error("Error patching Audio constructor:", error);
+    }
 
     // Set up event listener for avatar selection changes
     const handleAvatarSelectionChange = (event) => {
@@ -125,11 +147,15 @@ export default function Sidebar() {
 
     // Cleanup on component unmount
     return () => {
-      if (isMusicOn) {
-        audioManager.toggleBackgroundMusic(false);
+      try {
+        if (isMusicOn) {
+          audioManager.toggleBackgroundMusic(false);
+        }
+        
+        window.removeEventListener('avatarSelectionChanged', handleAvatarSelectionChange);
+      } catch (error) {
+        console.error("Error cleaning up audio:", error);
       }
-      
-      window.removeEventListener('avatarSelectionChanged', handleAvatarSelectionChange);
     };
   }, []);
 
@@ -166,12 +192,6 @@ export default function Sidebar() {
     };
     
     setSelections(newSelections);
-    
-    // If persona changed, update the music
-    if (category === "persona" && value !== selections.persona) {
-      // Music will be updated when "Complete Selection" is clicked
-      // This is because we want to follow the same flow as the existing code
-    }
   };
   
   // Function to check if selections have changed from last saved state
@@ -183,12 +203,21 @@ export default function Sidebar() {
 
   // Function to toggle music on/off
   const toggleMusic = () => {
-    const newMusicState = !isMusicOn;
-    setIsMusicOn(newMusicState);
-    localStorage.setItem("musicOn", newMusicState.toString());
-    
-    // Use the audio manager to handle the toggle
-    audioManager.toggleBackgroundMusic(newMusicState);
+    try {
+      const newMusicState = !isMusicOn;
+      setIsMusicOn(newMusicState);
+      localStorage.setItem("musicOn", newMusicState.toString());
+      
+      if (!newMusicState && audioRef.current) {
+        // Explicitly pause the audio element as a backup
+        audioRef.current.pause();
+      }
+      
+      // Use the audio manager to handle the toggle
+      audioManager.toggleBackgroundMusic(newMusicState);
+    } catch (error) {
+      console.error("Error toggling music:", error);
+    }
   };
 
   // Function to send selections to the backend
@@ -237,7 +266,11 @@ export default function Sidebar() {
     
     // Check if persona changed and update music if needed
     if (lastSavedSelections.persona !== selections.persona) {
-      updateBackgroundMusic(selections.persona);
+      try {
+        updateBackgroundMusic(selections.persona);
+      } catch (error) {
+        console.error("Error updating background music:", error);
+      }
     }
     
     // Dispatch a custom event to notify other components about the selection change
@@ -374,12 +407,22 @@ export default function Sidebar() {
                     <Volume2 size={32} style={{ color: "#b77beb" }} /> : 
                     <VolumeX size={32} style={{ color: "#8a7b97" }} />
                   }
-                  {isExpanded && <span>Music {isMusicOn ? 'On' : 'Off'}</span>}
+                  {isExpanded && (
+                    <span>
+                      {isMusicOn 
+                        ? (activeMusicPersona === "Professional" ? "Office Music On" : "Cafe Music On") 
+                        : "Music Off"}
+                    </span>
+                  )}
                 </div>
               </TooltipTrigger>
               {!isExpanded && (
                 <TooltipContent side="right" className="px-3 py-1.5 text-xs tooltip">
-                  <span>Music {isMusicOn ? 'On' : 'Off'}</span>
+                  <span>
+                    {isMusicOn 
+                      ? (activeMusicPersona === "Professional" ? "Office Music On" : "Cafe Music On") 
+                      : "Music Off"}
+                  </span>
                 </TooltipContent>
               )}
             </Tooltip>
