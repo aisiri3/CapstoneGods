@@ -6,8 +6,9 @@ import Image from "next/image";
 import "@/styles/SideBar.css";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/Tooltip";
 // icons
-import { AlignLeft, AlignRight, ChevronDown, Settings, UserPen, Check, Volume2, VolumeX } from "lucide-react";
-// Audio Manager
+import { AlignLeft, AlignRight, ChevronDown, Settings, UserPen, Check } from "lucide-react";
+import { TbMusic, TbMusicOff } from "react-icons/tb";
+
 import audioManager from "@/utils/audioManager";
 
 export default function Sidebar() {
@@ -17,9 +18,11 @@ export default function Sidebar() {
   const [isSending, setIsSending] = useState(false);
   const [isMusicOn, setIsMusicOn] = useState(false);
   const [activeMusicPersona, setActiveMusicPersona] = useState("Casual");
+  const [musicVolume, setMusicVolume] = useState(0.8); // Default to match audioManager.normalVolume
   const audioRef = useRef(null);
   const audioInitialized = useRef(false);
   const currentMusicFile = useRef("/backgrounds/cafe-music.mp3");
+  const maxVolume = 1.5; // Maximum volume multiplier
   
   // Default selections
   const defaultSelections = {
@@ -43,6 +46,27 @@ export default function Sidebar() {
       default:
         return "/backgrounds/cafe-music.mp3";
     }
+  };
+
+  // Function to handle volume change
+  const handleVolumeChange = (e) => {
+    // Get the raw slider value (0 to 1.5 range)
+    const sliderValue = parseFloat(e.target.value);
+    setMusicVolume(sliderValue);
+    
+    // Store user's volume preference (the slider value)
+    localStorage.setItem("musicVolume", sliderValue.toString());
+    
+    // Ensure the actual audio volume stays within valid HTML Audio range (0-1)
+    // This allows the slider to go beyond 1 for user perception of "extra loud"
+    // but prevents actual volume from exceeding browser limits
+    const actualVolume = Math.min(sliderValue, 1.0);
+    
+    // Update the audio manager's normal volume
+    audioManager.normalVolume = actualVolume;
+    
+    // Apply normalization
+    audioManager.applyVolumeNormalization();
   };
 
   // Function to update background music based on persona
@@ -139,6 +163,16 @@ export default function Sidebar() {
     // Check if music preference is stored in localStorage
     const musicPreference = localStorage.getItem("musicOn") === "true";
     setIsMusicOn(musicPreference);
+    
+    // Check if volume preference is stored in localStorage
+    const storedVolume = localStorage.getItem("musicVolume");
+    if (storedVolume) {
+      const parsedVolume = parseFloat(storedVolume);
+      if (!isNaN(parsedVolume)) {
+        setMusicVolume(parsedVolume);
+        audioManager.normalVolume = parsedVolume;
+      }
+    }
 
     // Initialize audio through the audio manager (only once)
     if (!audioInitialized.current) {
@@ -341,6 +375,9 @@ export default function Sidebar() {
     },
   ];
 
+  // Calculate default slider position (66% of max)
+  const defaultSliderPosition = maxVolume * 0.66;
+
   return (
     <div className="sidebar-container">
       <div className={`sidebar ${isExpanded ? "expanded" : "collapsed"}`}>
@@ -431,16 +468,28 @@ export default function Sidebar() {
               <TooltipTrigger asChild>
                 <div className="sidebar-icon" onClick={toggleMusic}>
                   {isMusicOn ? 
-                    <Volume2 size={32} style={{ color: "#b77beb" }} /> : 
-                    <VolumeX size={32} style={{ color: "#8a7b97" }} />
+                    <TbMusic size={32} style={{ color: "#b77beb" }} /> : 
+                    <TbMusicOff size={32} style={{ color: "#8a7b97" }} />
                   }
-                  {isExpanded && (
-                    <span>
-                      {isMusicOn 
-                        ? (activeMusicPersona === "Professional" ? "Office Music On" : "Cafe Music On") 
-                        : "Music Off"}
-                    </span>
-                  )}
+                  {/* Volume slider when expanded */}
+                  {isExpanded && isMusicOn ? (
+                    <div className="volume-slider-container" onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max={maxVolume} 
+                        step="0.01"
+                        value={musicVolume}
+                        onChange={handleVolumeChange}
+                        className="volume-slider"
+                      />
+                      <span className="music-type">
+                        {activeMusicPersona === "Professional" ? "Office" : "Cafe"}
+                      </span>
+                    </div>
+                  ) : isExpanded ? (
+                    <span>Music Off</span>
+                  ) : null}
                 </div>
               </TooltipTrigger>
               {!isExpanded && (

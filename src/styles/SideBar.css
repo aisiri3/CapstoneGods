@@ -224,3 +224,90 @@
   bottom: 80px;
   width: 100%;
 }
+
+/* Volume Slider Styles with Colored Track - Add to your SideBar.css file */
+
+.volume-slider-container {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  margin-left: 8px;
+  gap: 8px;
+}
+
+/* Common styles for the slider */
+.volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px; /* Match track height */
+  background: #aaaaaabb; /* Grey background for unfilled portion */
+  border-radius: 5px;
+  outline: none;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+  position: relative;
+  overflow: hidden; /* This is important for the colored track effect */
+  margin: 10px 0; /* Add vertical margin to ensure sufficient click area */
+  padding: 0; /* Remove padding */
+}
+
+.volume-slider:hover {
+  opacity: 1;
+}
+
+/* Ensure the runnable track is properly sized */
+.volume-slider::-webkit-slider-runnable-track {
+  background-color: #aaaaaabb; /* Same as unfilled */
+  height: 4px;
+  border-radius: 5px;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  background: #6d11b9e8; /* Purple thumb */
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  /* This creates the filled color effect */
+  box-shadow: -200px 0 0 195px #6d11b9e8; /* Large shadow to the left */
+  /* Fix for vertical alignment */
+  margin-top: -2px; /* Half of the height difference */
+}
+
+/* Firefox styles for the slider */
+.volume-slider::-moz-range-track {
+  background-color: #464653;
+  height: 8px;
+  border-radius: 5px;
+}
+
+.volume-slider::-moz-range-progress {
+  background: #5f179d;
+  height: 8px;
+  border-radius: 5px;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 8px;
+  height: 8px;
+  background: #5f179d;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.music-type {
+  font-size: 13px;
+  color: #b77beb;
+  min-width: 36px;
+}
+
+/* Prevent clicking on the slider from toggling music */
+.volume-slider-container input {
+  cursor: pointer;
+}
