@@ -208,3 +208,19 @@
   font-size: 12px;
   white-space: nowrap;
 }
+
+/* Music Toggle Section */
+.music-toggle {
+  padding: 10px;
+  position: absolute;
+  bottom: 140px; /* Position above settings-item which is at bottom: 80px */
+  width: 100%;
+}
+
+/* Settings Section - keep as is */
+.settings-item {
+  padding: 10px;
+  position: absolute;
+  bottom: 80px;
+  width: 100%;
+}
