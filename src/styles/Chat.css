@@ -21,7 +21,7 @@
 .userMessage {
   background-color: aliceblue;
   color: black;
-  font-size: clamp(13px, 1vw, 16px);
+  font-size: clamp(16px, 1.2vw, 20px);
   align-self: flex-end;
   padding: 12px;
   border-radius: 7px 7px 0 7px;
@@ -33,7 +33,7 @@
   background-image: linear-gradient(to right, #6a31fb, #e031fb);
   /* background-color: #6a31fbc9; */
   color:white;
-  font-size: clamp(13px, 1vw, 16px);
+  font-size: clamp(16px, 1.2vw, 20px);
   align-self: flex-start;
   padding: 12px;
   border-radius: 7px 7px 7px 0;
@@ -43,7 +43,7 @@
 
 .inputArea {
   display: flex;
-  height: 7%;
+  height: 10%;
   margin-top: 10px;
   border: 1.5px solid rgb(183, 123, 235);
   border-radius: 23px 23px 23px 23px;
@@ -58,7 +58,7 @@
   background-color: transparent;
   border: none; 
   outline: none; 
-  font-size: clamp(13px, 1vw, 16px);
+  font-size: clamp(16px, 1.2vw, 20px);
   font-family: 'Verdana', sans-serif;
   padding: 10px; 
   color: white;

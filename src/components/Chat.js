@@ -30,8 +30,8 @@ export default function Chat({ onAvatarStateChange }) {
   // Define intro messages based on language and persona
   const introMessages = {
     English: {
-      Formal: "Hello! I’m here to assist you in your language learning journey. Please feel free to ask me anything in the format of “How can I…” For instance, you might ask, “How can I ask someone for the project update?” and I’ll provide you with helpful guidance. Let’s begin!",
-      Casual: "Hey there! I'm here to help you with your language learning journey. Feel free to ask me anything in the format of 'How can I...' For example, you can ask 'How can I order coffee?' and I'll provide you with the answer. Let's get started!"
+      Formal: "Hello! I’m here to assist you in your language learning journey. Please feel free to ask me anything in the format of “How can I...?” For instance, you might ask, “How can I ask someone for the project update?” and I’ll provide you with helpful guidance. Let’s begin!",
+      Casual: "Hey there! I'm here to help you with your language learning journey. Feel free to ask me anything in the format of 'How can I...?' For example, you can ask 'How can I order coffee?' and I'll provide you with the answer. Let's get started!"
     },
     Malay: {
       Formal: "Helo! Saya di sini untuk membantu anda dalam perjalanan pembelajaran bahasa anda. Jangan segan untuk bertanya apa sahaja dalam format “Bagaimana saya boleh…” Sebagai contoh, anda mungkin bertanya, “Bagaimana saya boleh meminta kemas kini projek daripada seseorang?” dan saya akan memberikan panduan yang berguna. Mari kita mulakan!",
@@ -263,7 +263,6 @@ export default function Chat({ onAvatarStateChange }) {
       // Start playing fillers while waiting for the response
       fillerManager.playSingleFiller();
 
-      // Update the error handling section in sendMessage function
       try {
         // Send message to server and get response
         const response = await fetch('/api/speak', {
@@ -297,23 +296,16 @@ export default function Chat({ onAvatarStateChange }) {
           isFiller: false
         };
         
-        // Remove loading message - with additional null checks
-        if (conversationBoxRef.current && conversationBoxRef.current.firstChild && 
-            conversationBoxRef.current.firstChild.classList &&
-            conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
+        // Remove loading message
+        if (conversationBoxRef.current.firstChild && conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
           conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
         }
 
-        // Display bot's response in chat - with null check
-        if (conversationBoxRef.current) {
-          const botDiv = document.createElement("div");
-          botDiv.className = "outputMessage";
-          botDiv.innerText = data.response;
-          conversationBoxRef.current.prepend(botDiv);
-          
-          // Scroll to bottom again
-          conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
-        }
+        // Display bot's response in chat
+        const botDiv = document.createElement("div");
+        botDiv.className = "outputMessage";
+        botDiv.innerText = data.response;
+        conversationBoxRef.current.prepend(botDiv);
         
         // Queue the response - the filler manager will handle the transition
         fillerManager.queueResponse(responseData);
@@ -321,26 +313,24 @@ export default function Chat({ onAvatarStateChange }) {
         // Signal that processing is done
         setIsProcessing(false);
 
+        // Scroll to bottom again
+        conversationBoxRef.current.scrollTop = conversationBoxRef.current.scrollHeight;
       } catch (error) {
         console.error("Error processing message:", error);
         
         // Stop playing fillers
         await fillerManager.stopAllFillers();
         
-        // Remove loading message - with additional null checks
-        if (conversationBoxRef.current && conversationBoxRef.current.firstChild && 
-            conversationBoxRef.current.firstChild.classList &&
-            conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
+        // Remove loading message
+        if (conversationBoxRef.current.firstChild && conversationBoxRef.current.firstChild.classList.contains('loadingMessage')) {
           conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
         }
         
-        // Display error message - with null check
-        if (conversationBoxRef.current) {
-          const errorDiv = document.createElement("div");
-          errorDiv.className = "errorMessage";
-          errorDiv.innerText = "Sorry, there was an error processing your message.";
-          conversationBoxRef.current.prepend(errorDiv);
-        }
+        // Display error message
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "errorMessage";
+        errorDiv.innerText = "Sorry, there was an error processing your message.";
+        conversationBoxRef.current.prepend(errorDiv);
         
         // Set processing to false
         setIsProcessing(false);
