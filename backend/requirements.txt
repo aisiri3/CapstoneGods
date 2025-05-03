@@ -31,3 +31,6 @@ google-crc32c==1.6.0
 google-pasta==0.2.0
 google-resumable-media==2.7.2
 googleapis-common-protos==1.66.0
+
+#TESTING:
+pytest==8.3.5
