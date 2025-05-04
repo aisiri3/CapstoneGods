@@ -9,7 +9,7 @@ class Config:
     # MySQL configurations
     MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
     MYSQL_USER = os.getenv('MYSQL_USER', 'root')
-    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'cap123')
+    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'Password01')
     MYSQL_DB = os.getenv('MYSQL_DB', 'capstoneDB')
     MYSQL_CHARSET = 'utf8mb4'
     

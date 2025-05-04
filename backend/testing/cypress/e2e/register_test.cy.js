@@ -8,7 +8,7 @@ To run tests:
   4. In the Cypress UI, navigate to the "e2e" test list and click on `register.cy.js` to run 
      this test.
   5. Alternatively to run tests (headless mode in terminal): 
-     npx cypress run --spec cypress/e2e/register.cy.js
+     npx cypress run --spec cypress/e2e/register_test.cy.js
 
 */
 
