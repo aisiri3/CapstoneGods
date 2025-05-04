@@ -22,7 +22,7 @@ In the virtual environment, install required dependencies:
 pip install -r requirements.txt
 ```
 
-**NOTE!** Apart from the requirements already installed, you also need to make sure to install the appropriate versions of torch and torchaudio for your machine and CUDA version; the compatible numpy version to install also depends on these versions. To double check if your torch version is compatible with your CUDA (and it is activated), run:
+**NOTE!** Apart from the requirements already installed, you also need to make sure to install the appropriate versions of torch and torchaudio for your machine and CUDA version; the compatible numpy and spacy versions to install also depends on these versions. To double check if your torch version is compatible with your CUDA (and it is activated), run:
 ```
 python check_cuda.py
 ```
