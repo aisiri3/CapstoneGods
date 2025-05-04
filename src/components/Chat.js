@@ -1,9 +1,21 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-// import useFillerManager from "./FillerManager";
 import useSingleFillerManager from "./SingleFillerManager";
 import "@/styles/Chat.css";
+
+/**
+ * Chat Component
+ * 
+ * Handles user-avatar conversation interactions in a language learning application.
+ * This component manages:
+ * - User input collection and validation
+ * - Communication with backend API for text-to-speech conversion
+ * - Display of conversation history
+ * - Playing intro messages based on selected avatar characteristics
+ * - Integration with the FillerManager to handle avatar animations during processing
+ * - Avatar state synchronization based on audio playback
+ */
 
 export default function Chat({ onAvatarStateChange }) {
   const inputFieldRef = useRef(null);
@@ -14,9 +26,6 @@ export default function Chat({ onAvatarStateChange }) {
   const introDisplayedRef = useRef(false);
   const [inputError, setInputError] = useState("");
   
-  // Debug counter to track component renders
-  const renderCountRef = useRef(0);
-
   // State to store current avatar selection
   const [avatarSelection, setAvatarSelection] = useState({
     gender: "Male", 
@@ -44,15 +53,9 @@ export default function Chat({ onAvatarStateChange }) {
     fillerManager.setIsProcessing(isProcessing);
   }, [isProcessing, fillerManager]);
 
-  // Debug: Track renders
-  useEffect(() => {
-    renderCountRef.current++;
-  });
-
   // Get intro message based on current selection
   const getIntroMessage = () => {
     const { language, persona } = avatarSelection;
-    console.log(`Getting intro message for: ${language}, ${persona}`);
     
     const formalKey = persona === "Professional" ? "Formal" : "Casual";
     const message = introMessages[language]?.[formalKey] || introMessages.English.Casual;
@@ -65,7 +68,6 @@ export default function Chat({ onAvatarStateChange }) {
     try {
       const storedSelections = JSON.parse(localStorage.getItem("userSelections"));
       if (storedSelections) {
-        console.log("Loading initial selection from localStorage:", storedSelections);
         setAvatarSelection(storedSelections);
       }
     } catch (error) {
@@ -80,19 +82,16 @@ export default function Chat({ onAvatarStateChange }) {
       while (conversationBoxRef.current.firstChild) {
         conversationBoxRef.current.removeChild(conversationBoxRef.current.firstChild);
       }
-      console.log("Chat messages cleared");
     }
   };
 
   // Listen for changes in avatar selection
   useEffect(() => {
     const handleSelectionChange = (event) => {
-      console.log("Chat received avatar selection change:", event.detail);
-      
       // Clear chat completely when selection changes
       clearChat();
       
-      // Update avatar selection - use the exact event detail to maintain original behavior
+      // Update avatar selection
       setAvatarSelection(event.detail);
       
       // Reset intro state to trigger new intro message
@@ -120,7 +119,6 @@ export default function Chat({ onAvatarStateChange }) {
   // Function to display the intro message in the chatbox
   const displayIntroMessage = () => {
     if (!conversationBoxRef.current || introDisplayedRef.current) {
-      console.log("Skipping intro display: already displayed or no conversation box");
       return;
     }
     
@@ -129,8 +127,6 @@ export default function Chat({ onAvatarStateChange }) {
     
     // Get the intro message
     const introMessage = getIntroMessage();
-    
-    console.log(`Displaying intro message: "${introMessage}" for ${avatarSelection.language}, ${avatarSelection.persona}`);
     
     const botDiv = document.createElement("div");
     botDiv.className = "outputMessage";
@@ -141,11 +137,8 @@ export default function Chat({ onAvatarStateChange }) {
 
   // First effect: Clear flags when selection changes
   useEffect(() => {
-    console.log("Avatar selection changed to:", avatarSelection);
-    
     // Only reset if it's not the initial render
     if (renderCountRef.current > 1) {
-      console.log("Resetting intro flags due to selection change");
       introDisplayedRef.current = false;
       setIntroPlayed(false);
     }
@@ -154,12 +147,8 @@ export default function Chat({ onAvatarStateChange }) {
   // Second effect: Display intro when needed
   useEffect(() => {
     if (!introPlayed) {
-      console.log("Intro not played yet, scheduling display...");
-      console.log("Current avatar selection for intro:", JSON.stringify(avatarSelection));
-      
       // Use a small delay to ensure state has been updated properly
       const timer = setTimeout(() => {
-        console.log("Now displaying intro message...");
         displayIntroMessage();
         setIntroPlayed(true);
       }, 100);
@@ -167,6 +156,14 @@ export default function Chat({ onAvatarStateChange }) {
       return () => clearTimeout(timer);
     }
   }, [introPlayed, avatarSelection]);
+
+  // Debug counter to track component renders (for internal state resets)
+  const renderCountRef = useRef(0);
+  
+  // Track renders for conditional logic
+  useEffect(() => {
+    renderCountRef.current++;
+  });
 
   // Initialize on mount
   useEffect(() => {
@@ -179,7 +176,6 @@ export default function Chat({ onAvatarStateChange }) {
     });
     
     return () => {
-      console.log("Chat component unmounting - cleaning up resources");
       cleanupPreviousAudio();
     };
   }, []); // Empty dependency array - only runs once
@@ -275,13 +271,6 @@ export default function Chat({ onAvatarStateChange }) {
         });
 
         const data = await response.json();
-        
-        // Log the received data
-        console.log("Received data from backend:", {
-          responseTextLength: data.response ? data.response.length : 0,
-          audioAvailable: !!data.audio,
-          mouthCuesLength: data.mouthCues ? data.mouthCues.length : 0
-        });
         
         // Prepare the audio URL
         cleanupPreviousAudio();

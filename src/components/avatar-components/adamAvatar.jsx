@@ -1,3 +1,11 @@
+/**
+ * Adam Avatar Component (Casual)
+ * 
+ * Renders Adam, the avatar for English, Male, Casual settings.
+ * A 3D avatar component that handles facial animations, lip syncing, and audio playback.
+ * 
+ */
+
 import React, { useEffect, useRef, useState } from 'react'
 import { useGraph } from '@react-three/fiber'
 import { useAnimations, useFBX, useGLTF } from '@react-three/drei'
@@ -19,18 +27,6 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
   const [introLipSyncData, setIntroLipSyncData] = useState(null);
   const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response' or 'filler'
   const [activeLipSync, setActiveLipSync] = useState(null);
-
-  // Track props changes for debugging
-  useEffect(() => {
-    console.log("Avatar props changed:", {
-      hasLipSyncData: !!lipSyncData,
-      audioUrl,
-      isFiller,
-      isPlaying,
-      animation: isPlaying ? "Playing" : "Not playing",
-      activeAudio
-    });
-  }, [lipSyncData, audioUrl, isFiller, isPlaying, activeAudio]);
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
@@ -124,7 +120,7 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
       blink();
     }, Math.random() * 3000 + 3000); 
   
-    return () => clearInterval(blinkInterval); // Cleanup on unmount
+    return () => clearInterval(blinkInterval);
   }, [nodes]);
 
   const { actions, mixer } = useAnimations(
@@ -134,7 +130,7 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
 
   const [animation, setAnimation] = useState("Idle");
 
-  // Add this effect to handle component unmounting
+  // Effect to handle component unmounting
   useEffect(() => {
     return () => {
       console.log("Avatar component unmounting - cleaning up resources");
@@ -142,15 +138,12 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
     };
   }, []);
 
-  // Separate function to handle audio playback
   const startAudioPlayback = (url, audioType, lipsyncData) => {
     console.log(`Starting ${audioType} audio playback`, url);
     
-    // Create new audio element
     const audio = new Audio();
     audio.src = url;
     
-    // Set up event handlers
     audio.onloadedmetadata = () => {
       console.log(`${audioType} audio metadata loaded, duration:`, audio.duration);
     };
@@ -171,7 +164,6 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
       setIsPlaying(false);
       setAnimation("Idle");
       
-      // Only update activeAudio if this was intro audio
       if (activeAudio === 'intro' && !audioType.includes('filler')) {
         setActiveAudio('response');
       }
@@ -183,10 +175,8 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
       setAnimation("Idle");
     };
     
-    // Store reference
     audioRef.current = audio;
     
-    // Play audio with retry logic
     const playWithRetry = (retries = 3) => {
       console.log(`Attempting to play ${audioType} audio (retries left: ${retries})`);
       audio.play().catch(err => {
@@ -202,29 +192,23 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
       });
     };
     
-    // Start playback
     playWithRetry();
   };
 
   /* Set animation states based on playing/loading/otherwise */
-  // Play intro audio when component mounts and intro lipsync data is loaded
   useEffect(() => {
     if (isInitialized && introLipSyncData && activeAudio === 'intro') {
       console.log("Playing intro audio");
       
-      // Create audio element for intro
       const introAudio = new Audio('/intros/male-casual-intro.wav');
       audioRef.current = introAudio;
       
-      // Set up event handlers
       introAudio.onplay = () => {
-        console.log("Intro audio playback started");
         setIsPlaying(true);
         setAnimation("Waving");
       };
       
       introAudio.onended = () => {
-        console.log("Intro audio playback ended");
         setIsPlaying(false);
         setAnimation("Idle");
         setActiveAudio('response'); // Switch to response mode after intro
@@ -235,7 +219,6 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
         setAnimation("Idle");
       };
       
-      // Start playing after a short delay to ensure everything is loaded
       setTimeout(() => {
         introAudio.play().catch(err => {
           console.error("Error playing intro audio:", err);
@@ -265,18 +248,15 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
       return;
     }
 
-    // Determine if we're handling a filler or a response
     const audioType = isFiller ? 'filler' : 'response';
     console.log(`Processing ${audioType} audio with URL:`, audioUrl);
     
-    // Force a delay before starting response audio (if not a filler)
     if (!isFiller) {
       console.log("Response audio detected, adding delay before playback");
       setTimeout(() => {
         startAudioPlayback(audioUrl, audioType, lipSyncData);
-      }, 300); // Longer delay for response audio
+      }, 300);
     } else {
-      // Start filler audio immediately
       startAudioPlayback(audioUrl, audioType, lipSyncData);
     }
   }, [audioUrl, lipSyncData, isFiller]);
@@ -286,14 +266,12 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
     if (actions && actions[animation]) {
       console.log(`Switching to animation: ${animation}`);
       
-      // Fade out any currently running animations
       Object.values(actions).forEach(action => {
         if (action.isRunning()) {
           action.fadeOut(0.5);
         }
       });
 
-      // Play the new animation
       actions[animation].fadeIn(0.4).play();
     }
   }, [animation, actions]);
@@ -334,5 +312,4 @@ export function Adam({ lipSyncData, audioUrl, position, rotation, scale, isFille
   )
 }
 
-// Preload the GLB model
 useGLTF.preload('/avatars/adamishere.glb')

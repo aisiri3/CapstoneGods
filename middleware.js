@@ -1,8 +1,16 @@
-// middleware.js (place at the root of your Next.js project)
 import { NextResponse } from 'next/server';
 
 console.log('Cookies in request:', request.cookies);
 console.log('authToken value:', request.cookies.get('authToken')?.value);
+
+/**
+ * Authentication Middleware
+ * 
+ * This middleware handles authentication and route protection throughout the application.
+ * It intercepts incoming requests to determine if users have appropriate access rights
+ * before allowing navigation to protected routes.
+ * 
+ */
 
 export function middleware(request) {
   const url = request.nextUrl.clone();

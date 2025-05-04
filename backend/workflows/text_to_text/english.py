@@ -28,17 +28,6 @@ def get_model(model_id="meta-llama/Llama-2-7b-chat-hf"):
     print("Model initialized successfully!")
     return llama_pipeline
 
-# def init_model(model_id="meta-llama/Llama-2-7b-chat-hf"):
-#     """Initialize the text-to-text model (disabled for testing)."""
-#     print("Initializing model SKIPPED for testing...")
-    
-#     # Return a dummy object instead of the actual model
-#     class DummyPipeline:
-#         def __call__(self, *args, **kwargs):
-#             return [{"generated_text": f"[TEST MODE] This is a dummy response. Original prompt: {args[0]}"}]
-    
-#     print("Dummy model initialized successfully!")
-#     return DummyPipeline()
 
 def get_response(llama_pipeline, prompt):
     """Get a response from the model."""
@@ -68,10 +57,6 @@ def get_response(llama_pipeline, prompt):
 
     return answer_text, elapsed_time
 
-# def get_response(llama_pipeline, prompt):
-#     response_text = prompt
-#     print("Note: Llama model is disabled for testing.")
-#     return response_text, 0.0
 
 if __name__ == "__main__":
     print("hey Im running llama")

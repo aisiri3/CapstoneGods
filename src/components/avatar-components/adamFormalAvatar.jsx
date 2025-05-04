@@ -1,3 +1,11 @@
+/**
+ * Adam Avatar Component (Professional)
+ * 
+ * Renders Adam, the avatar for English, Male, Professional settings.
+ * A 3D avatar component that handles facial animations, lip syncing, and audio playback.
+ * 
+ */
+
 import React, { useEffect, useRef, useState } from 'react'
 import { useGraph } from '@react-three/fiber'
 import { useAnimations, useFBX, useGLTF } from '@react-three/drei'
@@ -13,24 +21,10 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
   const group = useRef()
   const [isPlaying, setIsPlaying] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   
-  // State for intro and response lipsync
   const [introLipSyncData, setIntroLipSyncData] = useState(null);
-  const [activeAudio, setActiveAudio] = useState('intro'); // 'intro' or 'response' or 'filler'
+  const [activeAudio, setActiveAudio] = useState('intro');
   const [activeLipSync, setActiveLipSync] = useState(null);
-
-  // Track props changes for debugging
-  useEffect(() => {
-    console.log("Avatar props changed:", {
-      hasLipSyncData: !!lipSyncData,
-      audioUrl,
-      isFiller,
-      isPlaying,
-      animation: isPlaying ? "Playing" : "Not playing",
-      activeAudio
-    });
-  }, [lipSyncData, audioUrl, isFiller, isPlaying, activeAudio]);
 
   // Load intro lipsync data when component mounts
   useEffect(() => {
@@ -46,7 +40,6 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
       });
   }, []);
 
-  // Load and name animations
   const { animations: idleAnimation } = useFBX("/animations/adam/Adam Idle.fbx")
   const { animations: talkingAnimation } = useFBX("/animations/adam/Adam Talking.fbx")
   const { animations: wavingAnimation } = useFBX("/animations/adam/Adam Waving.fbx")
@@ -55,7 +48,6 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
   talkingAnimation[0].name = "Talking"
   wavingAnimation[0].name = "Waving"
 
-  // Cleanup function for audio resources
   const cleanupAudio = () => {
     if (audioRef.current) {
       console.log("Avatar cleaning up audio resources");
@@ -77,9 +69,7 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
       return;
     }
     
-    // Setup default facial expressions
     try {
-      // Avatar is always smiling
       nodes.UnionAvatars_Head_1.morphTargetInfluences[
         nodes.UnionAvatars_Head_1.morphTargetDictionary["mouthSmileLeft"]
       ] = 1.0;
@@ -94,7 +84,6 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
       console.error("Error setting default facial expressions:", e);
     }
     
-    // Function to handle blinking
     const blink = () => {
       try {
         nodes.UnionAvatars_Head_1.morphTargetInfluences[
@@ -113,18 +102,17 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
           nodes.UnionAvatars_Head_1.morphTargetInfluences[
             nodes.UnionAvatars_Head_1.morphTargetDictionary["eyeBlinkRight"]
           ] = 0;
-        }, 100); // Blink duration (adjust for smoothness)
+        }, 100); 
       } catch (e) {
         console.error("Error during blink animation:", e);
       }
     };
   
-    // Blink every 3-6 seconds randomly
     const blinkInterval = setInterval(() => {
       blink();
     }, Math.random() * 3000 + 3000); 
   
-    return () => clearInterval(blinkInterval); // Cleanup on unmount
+    return () => clearInterval(blinkInterval);
   }, [nodes]);
 
   const { actions, mixer } = useAnimations(
@@ -134,7 +122,6 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
 
   const [animation, setAnimation] = useState("Idle");
 
-  // Add this effect to handle component unmounting
   useEffect(() => {
     return () => {
       console.log("Avatar component unmounting - cleaning up resources");
@@ -142,15 +129,12 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
     };
   }, []);
 
-  // Separate function to handle audio playback
   const startAudioPlayback = (url, audioType, lipsyncData) => {
     console.log(`Starting ${audioType} audio playback`, url);
     
-    // Create new audio element
     const audio = new Audio();
     audio.src = url;
     
-    // Set up event handlers
     audio.onloadedmetadata = () => {
       console.log(`${audioType} audio metadata loaded, duration:`, audio.duration);
     };
@@ -171,7 +155,6 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
       setIsPlaying(false);
       setAnimation("Idle");
       
-      // Only update activeAudio if this was intro audio
       if (activeAudio === 'intro' && !audioType.includes('filler')) {
         setActiveAudio('response');
       }
@@ -183,10 +166,8 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
       setAnimation("Idle");
     };
     
-    // Store reference
     audioRef.current = audio;
     
-    // Play audio with retry logic
     const playWithRetry = (retries = 3) => {
       console.log(`Attempting to play ${audioType} audio (retries left: ${retries})`);
       audio.play().catch(err => {
@@ -202,32 +183,26 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
       });
     };
     
-    // Start playback
     playWithRetry();
   };
 
   /* Set animation states based on playing/loading/otherwise */
-  // Play intro audio when component mounts and intro lipsync data is loaded
   useEffect(() => {
     if (isInitialized && introLipSyncData && activeAudio === 'intro') {
       console.log("Playing intro audio");
       
-      // Create audio element for intro
       const introAudio = new Audio('/intros/male-professional-intro.wav');
       audioRef.current = introAudio;
       
-      // Set up event handlers
       introAudio.onplay = () => {
-        console.log("Intro audio playback started");
         setIsPlaying(true);
         setAnimation("Waving");
       };
       
       introAudio.onended = () => {
-        console.log("Intro audio playback ended");
         setIsPlaying(false);
         setAnimation("Idle");
-        setActiveAudio('response'); // Switch to response mode after intro
+        setActiveAudio('response');
       };
       
       introAudio.onpause = () => {
@@ -235,7 +210,6 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
         setAnimation("Idle");
       };
       
-      // Start playing after a short delay to ensure everything is loaded
       setTimeout(() => {
         introAudio.play().catch(err => {
           console.error("Error playing intro audio:", err);
@@ -251,11 +225,9 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
     }
   }, [isInitialized, introLipSyncData, activeAudio]);
 
-  // Handle playing response or filler audio when provided
   useEffect(() => {
     console.log(`Audio effect triggered with URL: ${audioUrl}, isFiller: ${isFiller}`);
     
-    // Always clean up previous audio regardless of what's coming next
     cleanupAudio();
     
     if (!audioUrl) {
@@ -265,35 +237,29 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
       return;
     }
 
-    // Determine if we're handling a filler or a response
     const audioType = isFiller ? 'filler' : 'response';
     console.log(`Processing ${audioType} audio with URL:`, audioUrl);
     
-    // Force a delay before starting response audio (if not a filler)
     if (!isFiller) {
       console.log("Response audio detected, adding delay before playback");
       setTimeout(() => {
         startAudioPlayback(audioUrl, audioType, lipSyncData);
-      }, 300); // Longer delay for response audio
+      }, 300);
     } else {
-      // Start filler audio immediately
       startAudioPlayback(audioUrl, audioType, lipSyncData);
     }
   }, [audioUrl, lipSyncData, isFiller]);
 
-  // Handle animation transitions
   useEffect(() => {
     if (actions && actions[animation]) {
       console.log(`Switching to animation: ${animation}`);
       
-      // Fade out any currently running animations
       Object.values(actions).forEach(action => {
         if (action.isRunning()) {
           action.fadeOut(0.5);
         }
       });
 
-      // Play the new animation
       actions[animation].fadeIn(0.4).play();
     }
   }, [animation, actions]);
@@ -318,7 +284,6 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
         morphTargetInfluences={nodes.UnionAvatars_Head_1.morphTargetInfluences} 
       />
       
-      {/* LipSync controller for dynamically updating lip movements */}
       {activeLipSync && isPlaying && (
         <LipSyncController 
           meshRef={headMeshRef}
@@ -334,5 +299,4 @@ export function AdamFormal({ lipSyncData, audioUrl, position, rotation, scale, i
   )
 }
 
-// Preload the GLB model
 useGLTF.preload('/avatars/adamishere.glb')

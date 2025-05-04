@@ -3,6 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
+/**
+ * PersonaEvaluationDashboard Component
+ * 
+ * This component allows users to add and view personas.
+ * It fetches existing personas from an API and displays them in a grid.
+ * Users can add a new persona by providing a name and description.
+ * The component handles form validation and error messages.
+ * 
+ */
+
 export default function PersonaEvaluationDashboard() {
   const [personas, setPersonas] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

@@ -240,14 +240,3 @@ def generate_mallam_response(text):
         traceback.print_exc()
         # Return a simple error message as fallback
         return "Maaf, saya menghadapi masalah teknikal sekarang."
-
-# Just for testing
-# if __name__ == "__main__":
-#     print("in main!")
-
-#     pipeline = get_model()
-#     prompt = "hari ini hari apa?"
-#     response = generate_mallam_response(prompt)
-#     print(f"\nPrompt: {prompt}")
-#     print(f"Response: {response}")
-#     print("Malay Text-to-Text conversion completed!")

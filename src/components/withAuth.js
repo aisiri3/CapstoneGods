@@ -1,5 +1,27 @@
 "use client";
 
+/**
+ * withAuth - Authentication Higher-Order Component
+ *
+ * This HOC (Higher-Order Component) provides authentication protection for pages.
+ * It wraps page components and ensures users are authenticated before allowing access.
+ * 
+ * Features:
+ * - Checks authentication status on component mount
+ * - Redirects unauthenticated users to the sign-in page
+ * - Displays a loading spinner during authentication check
+ * - Only renders the protected component when the user is authenticated
+ * 
+ * Usage:
+ *   import withAuth from '@/components/withAuth';
+ *   
+ *   function ProtectedPage() {
+ *     return <div>Protected Content</div>;
+ *   }
+ *   
+ *   export default withAuth(ProtectedPage);
+ */
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated } from '@/utils/auth';
