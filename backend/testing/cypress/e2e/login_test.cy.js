@@ -5,7 +5,7 @@ To run tests:
   2. Install the cypress package - npm install cypress (if not installed before)
   3. Ensure the backend server and frontend UI is running. 
   3. Launch the Cypress test runner UI - npx cypress open
-  4. In the Cypress UI, navigate to the "e2e" test list and click on `login.cy.js` to run 
+  4. In the Cypress UI, navigate to the "e2e" test list and click on `login_test.cy.js` to run 
      this test.
   5. Alternatively to run tests (headless mode in terminal): 
      npx cypress run --spec cypress/e2e/login_test.cy.js
