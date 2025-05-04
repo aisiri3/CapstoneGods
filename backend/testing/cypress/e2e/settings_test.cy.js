@@ -28,7 +28,6 @@ describe('Settings Page Tests', () => {
         cy.contains('Sign In').click();
         cy.wait(7000);
 
-
         cy.url().should('eq', `${BASE_URL}/main`, {timeout:10000});
     
         cy.get('.settings-item .sidebar-icon').click();
@@ -105,58 +104,78 @@ describe('Settings Page Tests', () => {
     
     // Test 6: Ensure we can successfully update password
     it('ChangePassword - Successfully Updates Password', () => {
-        cy.url().should('eq', `${BASE_URL}/settings`, {timeout:20000});
+      cy.url().should('eq', `${BASE_URL}/settings`, {timeout:20000});
 
-        cy.intercept('POST', '/api/change-password').as('ChangePassword');
+      cy.intercept('POST', '/api/verify-password').as('VerifyPassword'); // Add this
+      cy.intercept('POST', '/api/change-password').as('ChangePassword');
 
-        const newPassword = 'NewPassword123'; 
+      const currentPassword = Cypress.env('password') || password;
+      const newPassword = 'NewPassword123'; 
 
-        // Retrieve user_id from localStorage (required for the API request)
-        cy.window().then((win) => {
-            const user = JSON.parse(win.localStorage.getItem('user'));
-            if (user) {
-            Cypress.env('user_id', user.user_id);
-            }
-        });
+      cy.window().then((win) => {
+          const user = JSON.parse(win.localStorage.getItem('user'));
+          if (user) {
+              Cypress.env('user_id', user.user_id);
+          }
+      });
 
-    
-        cy.get('#new-password').type(newPassword);
-        cy.get('#confirm-password').type(newPassword);
-        cy.contains('Save New Password').click({ force: true });
-
-        // Store the new password for the next login
-        Cypress.env('password', newPassword);
-
-    
-        // Ensure API request was sent successfully:
-        cy.wait('@ChangePassword').then(({ request, response }) => {
-          expect(request.body).to.deep.equal({
-            user_id: Cypress.env('user_id'),
-            new_password: newPassword,
-          });
+      cy.get('#current-password').type(currentPassword);
+      cy.contains('Verify').click();
+      
+      cy.wait('@VerifyPassword').then(({ response }) => {
           expect(response.statusCode).to.eq(200);
-          expect(response.body.message).to.eq('Password updated successfully');
+      });
+      
+      cy.contains('Current password entered is correct!').should('be.visible');
+      
+      cy.get('#new-password').type(newPassword);
+      cy.get('#confirm-password').type(newPassword);
+      cy.contains('Save New Password').click({ force: true });
+
+      Cypress.env('password', newPassword);
+
+      cy.wait('@ChangePassword').then(({ request, response }) => {
+        expect(request.body).to.deep.equal({
+          user_id: Cypress.env('user_id'),
+          current_password: currentPassword,
+          new_password: newPassword,
         });
-    
-        cy.contains('Password updated successfully!').should('be.visible');
+        expect(response.statusCode).to.eq(200);
+        expect(response.body.message).to.eq('Password updated successfully');
+      });
+
+      cy.contains('Password updated successfully!').should('be.visible');
     });
 
 
     // Test 7: Ensure API error on ChangePassword is handled properly:
     it('ChangePassword - Handles API Error on Password Update', () => {
-        cy.url().should('eq', `${BASE_URL}/settings`, {timeout:20000});
+      cy.url().should('eq', `${BASE_URL}/settings`, {timeout:20000});
 
-        cy.intercept('POST', '/api/change-password', {
-          statusCode: 400,
-          body: { error: 'Password update failed' },
-        }).as('changePassword');
-    
-        cy.get('#new-password').type('ValidPassword123');
-        cy.get('#confirm-password').type('ValidPassword123');
-        cy.contains('Save New Password').click({ force: true });
-    
-        cy.wait('@changePassword');
-        cy.contains('Password update failed').should('be.visible');
+      cy.intercept('POST', '/api/verify-password', {
+        statusCode: 200,
+        body: { message: 'Password verified successfully' }
+      }).as('verifyPassword');
+      
+      cy.intercept('POST', '/api/change-password', {
+        statusCode: 400,
+        body: { error: 'Password update failed' },
+      }).as('changePassword');
+      
+      const currentPassword = Cypress.env('password') || password;
+      
+      cy.get('#current-password').type(currentPassword);
+      cy.contains('Verify').click();
+      
+      cy.wait('@verifyPassword');
+      cy.contains('Current password entered is correct!').should('be.visible');
+      
+      cy.get('#new-password').type('ValidPassword123');
+      cy.get('#confirm-password').type('ValidPassword123');
+      cy.contains('Save New Password').click({ force: true });
+      
+      cy.wait('@changePassword');
+      cy.contains('Password update failed').should('be.visible');
     });
 
 
