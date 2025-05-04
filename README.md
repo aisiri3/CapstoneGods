@@ -44,7 +44,7 @@ source venv-malay/bin/activate
 # for Windows
 venv-malay/Scripts/activate
 ```
-**NOTE!** You strictly need to name this virtual environment venv-malay as we are calling the virtual environment directly in the code.
+**NOTE!** You strictly need to name this virtual environment venv-malay as we are calling the virtual environment directly in the code. You also need to install a torch and torchaudio version compatible with your CUDA, as per venv.
 
 You are also required to install a **separate set of requirements** in this new virtual environment:
 ```
@@ -72,9 +72,25 @@ The UI should be running on
 localhost:3000/
 ```
 
+## Connecting application to database
+Ensure that the database server is running while you run the application. 
+
+You should also make sure that the password for database instance matches your actual password in ***backend/config***:
+```
+class Config:
+    """Base configuration."""
+    MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
+    MYSQL_USER = os.getenv('MYSQL_USER', 'root')
+    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'cap123')
+    
+    # Ensure your password is correct!
+    MYSQL_DB = os.getenv('MYSQL_DB', YOUR_DATABASE_PASSWORD)
+    MYSQL_CHARSET = 'utf8mb4'
+```
 
 
 ## Troubleshooting
+### TTS Error
 In the case that XTTS is not working as per normal, and you encounter this error:
 ```
 Flask error: {
@@ -82,7 +98,7 @@ Flask error: {
 
     ......
 ```
-You may need to go to your virtual environment (venv)'s folder and look for the following file at this path: ***venv/lib/python/site-packages/TTS/tts/utils/io.py***. You then have to manually force the model to load not in weights only mode:
+You may need to go to your virtual environment (venv)'s folder and look for the following file at this path: ***venv/lib/python/site-packages/TTS/utils/io.py***. You then have to manually force the model to load not in weights only mode:
 
 ```
 # Look for the chunk of code below:
@@ -102,6 +118,8 @@ You may need to go to your virtual environment (venv)'s folder and look for the 
             return torch.load(f, map_location=map_location, weights_only=False, **kwargs)
 ```
 
-
-Run in case got unicode issue
-''chcp 65001''
+### Unicode Issues
+If you encounter issues with unicode, try running:
+```
+chcp 65001
+```
