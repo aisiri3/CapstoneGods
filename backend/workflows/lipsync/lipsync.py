@@ -74,19 +74,4 @@ def generate_rhubarb_lipsync(audio_path):
                 {"start": 0.00, "end": 0.1, "value": "X"}
             ]
         }
-        
-if __name__ == "__main__":
-    print("Running Rhubarb lip sync test...")
-    audio_paths = [
-        "outputs/filler1_long_output_cm_long.wav",
-        "outputs/filler2_long_output_cm_long.wav",
-        "outputs/filler3_long_output_cm_long.wav",
-        "outputs/filler4_long_output_cm_long.wav",
-        "outputs/filler5_long_output_cm_long.wav",
-        "outputs/filler6_long_output_cm_long.wav",
-        "outputs/filler7_long_output_cm_long.wav",
-        "outputs/filler8_long_output_cm_long.wav",
-    ]
-    for audio_path in audio_paths:
-        lipsync_data = generate_rhubarb_lipsync(audio_path)
-        print(f"Lip sync data generated for {audio_path}: {lipsync_data}")
+    

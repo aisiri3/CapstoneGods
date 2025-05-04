@@ -89,127 +89,6 @@ def get_llama():
         loaded_models["llama"] = True
     return llama_model
 
-# def run_malay_tts(text, speaker, output_path):
-#     """
-#     Run the Malay TTS using a subprocess with the dedicated virtual environment.
-    
-#     Args:
-#         text (str): Text to convert to speech
-#         speaker (str): Speaker name ('Osman' for male, 'Yasmin' for female)
-#         output_path (str): Path to save the output audio file
-        
-#     Returns:
-#         bool: True if successful, False otherwise
-#     """
-#     try:
-#         # Get the current directory and build paths relative to it
-#         base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-#         print(f"Base directory: {base_dir}")
-        
-#         # Path to the mesolitica.py script
-#         script_path = os.path.join(base_dir, 'workflows', 'tts', 'mesolitica.py')
-#         print(f"Script path: {script_path}")
-        
-#         # Verify script exists
-#         if not os.path.exists(script_path):
-#             print(f"ERROR: Script file not found at: {script_path}")
-#             # Try to find the script
-#             for root, dirs, files in os.walk(base_dir):
-#                 if 'mesolitica.py' in files:
-#                     script_path = os.path.join(root, 'mesolitica.py')
-#                     print(f"Found script at: {script_path}")
-#                     break
-        
-#         # Path to the Python executable in the Malay venv
-#         if os.name == 'nt':  # Windows
-#             python_path = os.path.join(base_dir, 'venv-malay', 'Scripts', 'python.exe')
-#         else:  # Linux/Mac
-#             python_path = os.path.join(base_dir, 'venv-malay', 'bin', 'python')
-        
-#         print(f"Python path: {python_path}")
-        
-#         # Verify Python executable exists
-#         if not os.path.exists(python_path):
-#             print(f"ERROR: Python executable not found at: {python_path}")
-#             # Try to find python in venv-malay
-#             for root, dirs, files in os.walk(os.path.join(base_dir, 'venv-malay')):
-#                 for file in files:
-#                     if file == 'python.exe' or file == 'python':
-#                         python_path = os.path.join(root, file)
-#                         print(f"Found Python at: {python_path}")
-#                         break
-        
-#         # Ensure output directory exists (using absolute path)
-#         output_dir = os.path.dirname(os.path.abspath(output_path))
-#         os.makedirs(output_dir, exist_ok=True)
-#         print(f"Output directory: {output_dir}")
-        
-#         # Create a temporary file to hold the text with absolute path
-#         temp_text_file = os.path.join(output_dir, "temp_text.txt")
-#         print(f"Temp text file: {temp_text_file}")
-        
-#         with open(temp_text_file, "w", encoding="utf-8") as f:
-#             f.write(text)
-#             print(f"Text written to temp file: {text[:30]}...")
-        
-#         # Verify temp file was created
-#         if not os.path.exists(temp_text_file):
-#             print(f"ERROR: Failed to create temp file at: {temp_text_file}")
-#             return False
-            
-#         # Use absolute paths for everything in the command
-#         abs_output_path = os.path.abspath(output_path)
-        
-#         # Run the subprocess
-#         command = [
-#             python_path,
-#             script_path,
-#             "--text-file", temp_text_file,
-#             "--speaker", speaker,
-#             "--output", abs_output_path
-#         ]
-        
-#         print(f"Running Malay TTS subprocess with command: {' '.join(command)}")
-        
-#         # Run the subprocess and capture output
-#         result = subprocess.run(
-#             command, 
-#             capture_output=True,
-#             text=True
-#         )
-        
-#         # Print both stdout and stderr regardless of success
-#         if result.stdout:
-#             print(f"Malay TTS subprocess stdout: {result.stdout}")
-#         if result.stderr:
-#             print(f"Malay TTS subprocess stderr: {result.stderr}")
-            
-#         # Check return code
-#         if result.returncode != 0:
-#             print(f"Subprocess failed with return code: {result.returncode}")
-#             return False
-        
-#         # Clean up the temporary file
-#         try:
-#             if os.path.exists(temp_text_file):
-#                 os.remove(temp_text_file)
-#                 print("Temp file removed successfully")
-#         except Exception as cleanup_error:
-#             print(f"Warning: Failed to remove temp file: {cleanup_error}")
-        
-#         # Verify the output file was created
-#         if os.path.exists(abs_output_path):
-#             print(f"Success: Output file created at {abs_output_path}")
-#             return True
-#         else:
-#             print(f"ERROR: Output file was not created at {abs_output_path}")
-#             return False
-    
-#     except Exception as e:
-#         print(f"Error running Malay TTS subprocess: {e}")
-#         import traceback
-#         traceback.print_exc()
-#         return False
 def run_malay_tts(text, speaker, output_path):
     """
     Run the Malay TTS using a subprocess with optimizations for speed.
@@ -359,6 +238,7 @@ def run_malay_tts(text, speaker, output_path):
         import traceback
         traceback.print_exc()
         return False
+    
 def generate_llama_response(prompt, persona=None, avatar_config=None):
     """Generate a response using the Llama model."""
     sensitive_words = ['kill','hate','violent','harm']
@@ -655,24 +535,6 @@ def encode_audio_to_base64(audio_path):
         print(f"Error encoding audio: {e}")
         return None
 
-# def play_audio():
-#     """Play the generated audio file (no longer needed for frontend playback)."""
-#     output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
-#     playback_speech(output_path)
-
-# # Load saved selections on module initialization
-# try:
-#     selections_file = os.path.join(
-#         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-#         'data', 'avatar_selections.json'
-#     )
-#     if os.path.exists(selections_file):
-#         with open(selections_file, 'r') as f:
-#             current_avatar_selections.update(json.load(f))
-#             print(f"Loaded avatar selections: {current_avatar_selections}")
-# except Exception as e:
-#     print(f"Warning: Could not load saved selections: {e}")
-
 # Initialize the models for the current language on application startup
 def initialize_models_for_current_language():
     """
@@ -707,17 +569,11 @@ def process_speech_modified(text, avatar_config=None):
     try:
         # Process based on language
         if language == "English":
-            # Generate response using Llama
             
             response_text = generate_llama_response(text, avatar_config=config)
             print(f'response_text {response_text}' )
-            # Get TTS model
             model = get_english_tts()
-            
-            # Get appropriate speaker path based on avatar config
             speaker_path = get_speaker_path(avatar_config)
-            
-            # Convert response to speech
             english_tts_workflow(model, response_text, speaker_path, output_path)
         
         else:  # Malay language processing
@@ -753,7 +609,6 @@ def process_speech_modified(text, avatar_config=None):
                 response_text = response_text.replace('&quot;', '"')
 
                 print(f'translated = {response_text}')
-                    # Select speaker based on gender
                 speaker_name = "Osman" if gender == "Male" else "Yasmin"
                 
                 # Run the Malay TTS subprocess with translated response

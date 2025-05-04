@@ -6,8 +6,6 @@ import torch.serialization
 from TTS.tts.configs.xtts_config import XttsConfig  # Add this import
 from TTS.tts.models.xtts import XttsAudioConfig  # Add this import
 
-# Allow PyTorch to deserialize XttsConfig and XttsAudioConfig
-# torch.serialization.add_safe_globals([XttsConfig, XttsAudioConfig])
 
 from TTS.api import TTS
 import sounddevice as sd
@@ -18,9 +16,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def get_tts_model(device=device):
     """Initialize the TTS model with weights_only=False."""
     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
-    
-    # Override PyTorch default behavior to allow full model loading
-    # torch.load = lambda *args, **kwargs: torch._load(*args, weights_only=False, **kwargs)
 
     tts.to(device)
     return tts
