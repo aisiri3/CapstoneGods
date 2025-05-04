@@ -1,4 +1,3 @@
-// src/pages/api/personas.js
 export default async function handler(req, res) {
     // Set CORS headers if needed
     res.setHeader('Access-Control-Allow-Origin', '*');
