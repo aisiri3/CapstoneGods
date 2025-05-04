@@ -7,33 +7,48 @@ import "@/styles/SideBar.css";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/Tooltip";
 import { AlignLeft, AlignRight, ChevronDown, Settings, UserPen, Check } from "lucide-react";
 import { TbMusic, TbMusicOff } from "react-icons/tb";
-
 import audioManager from "@/utils/audioManager";
+
+/**
+ * Sidebar Component
+ * 
+ * A responsive sidebar navigation component that allows users to customize their avatar 
+ * settings and control the application's background music.
+ * 
+ * - Expandable/collapsible sidebar UI with smooth animations
+ * - Avatar customization options with three categories:
+ *   - Gender selection (Male/Female)
+ *   - Persona selection (Casual/Professional)
+ *   - Language selection (English/Malay)
+ * - Background music control with:
+ *   - Toggle on/off functionality
+ *   - Volume adjustment slider
+ *   - Dynamic music tracks based on selected persona
+ * - User settings access
+ * - User profile display
+ * 
+ */
 
 export default function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState({});
-  const [user, setUser] = useState(null); // Store user data
+  const [user, setUser] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [isMusicOn, setIsMusicOn] = useState(false);
   const [activeMusicPersona, setActiveMusicPersona] = useState("Casual");
-  const [musicVolume, setMusicVolume] = useState(0.8); // Default to match audioManager.normalVolume
+  const [musicVolume, setMusicVolume] = useState(0.8);
   const audioRef = useRef(null);
   const audioInitialized = useRef(false);
   const currentMusicFile = useRef("/backgrounds/cafe-music.mp3");
   const maxVolume = 1.5; // Maximum volume multiplier
   
-  // Default selections
   const defaultSelections = {
     gender: "Male", 
     persona: "Casual", 
     language: "English"
   };
   
-  // Current selections
   const [selections, setSelections] = useState({...defaultSelections});
-  
-  // Last saved selections
   const [lastSavedSelections, setLastSavedSelections] = useState({...defaultSelections});
 
   // Helper function to get the appropriate music file based on persona
@@ -52,8 +67,6 @@ export default function Sidebar() {
     // Get the raw slider value (0 to 1.5 range)
     const sliderValue = parseFloat(e.target.value);
     setMusicVolume(sliderValue);
-    
-    // Store user's volume preference (the slider value)
     localStorage.setItem("musicVolume", sliderValue.toString());
     
     // Ensure the actual audio volume stays within valid HTML Audio range (0-1)
@@ -61,10 +74,7 @@ export default function Sidebar() {
     // but prevents actual volume from exceeding browser limits
     const actualVolume = Math.min(sliderValue, 1.0);
     
-    // Update the audio manager's normal volume
     audioManager.normalVolume = actualVolume;
-    
-    // Apply normalization
     audioManager.applyVolumeNormalization();
   };
 
@@ -72,61 +82,46 @@ export default function Sidebar() {
   const updateBackgroundMusic = (newPersona) => {
     const newMusicFile = getMusicFileForPersona(newPersona);
     
-    // If music file is the same, no need to change
     if (newMusicFile === currentMusicFile.current) {
-      // Just update the active persona without changing the music
       setActiveMusicPersona(newPersona);
       return;
     }
     
-    // Update the current music file
     currentMusicFile.current = newMusicFile;
-    
-    // Update the active music persona
     setActiveMusicPersona(newPersona);
     
     // If music is currently playing, we need to change the track
     if (isMusicOn) {
       try {
-        // First stop current music (ensure it's fully stopped)
         audioManager.toggleBackgroundMusic(false);
-        
-        // Small delay to ensure audio has time to properly stop and clean up
         const switchDelay = setTimeout(() => {
           try {
-            // Clear old audio reference completely
             if (audioRef.current) {
               audioRef.current.pause();
               audioRef.current.src = "";
               audioRef.current = null;
             }
             
-            // Create a new audio element with the new music
             audioRef.current = new Audio(newMusicFile);
             audioManager.setBackgroundMusic(audioRef.current);
             
-            // Start playing the new music
             audioManager.toggleBackgroundMusic(true);
           } catch (innerError) {
             console.error("Error creating new audio after delay:", innerError);
           }
           
-          // Clear the timeout reference
           clearTimeout(switchDelay);
-        }, 150); // Increase delay to ensure complete cleanup
+        }, 150);
       } catch (error) {
         console.error("Error switching music tracks:", error);
       }
     } else {
-      // Just update the audio source without playing
       try {
-        // Properly clean up existing audio element
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current.src = "";
         }
         
-        // Create new audio element
         audioRef.current = new Audio(newMusicFile);
         audioManager.setBackgroundMusic(audioRef.current);
       } catch (error) {
@@ -137,33 +132,26 @@ export default function Sidebar() {
 
   // fetch user info for display (from localStorage)
   useEffect(() => {
-    // Retrieve user info from localStorage
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser) {
       setUser(storedUser);
     }
     
-    // Check if there are stored selections in localStorage
     const storedSelections = JSON.parse(localStorage.getItem("userSelections"));
     if (storedSelections) {
       setSelections(storedSelections);
       setLastSavedSelections(storedSelections);
       
-      // Set the active music persona based on stored selections
       setActiveMusicPersona(storedSelections.persona);
       
-      // Set the music file based on stored persona
       currentMusicFile.current = getMusicFileForPersona(storedSelections.persona);
     } else {
-      // If no stored selections, save the defaults
       localStorage.setItem("userSelections", JSON.stringify(defaultSelections));
     }
 
-    // Check if music preference is stored in localStorage
     const musicPreference = localStorage.getItem("musicOn") === "true";
     setIsMusicOn(musicPreference);
     
-    // Check if volume preference is stored in localStorage
     const storedVolume = localStorage.getItem("musicVolume");
     if (storedVolume) {
       const parsedVolume = parseFloat(storedVolume);
@@ -180,7 +168,6 @@ export default function Sidebar() {
         audioManager.setBackgroundMusic(audioRef.current);
         audioInitialized.current = true;
         
-        // Apply saved music preference
         if (musicPreference) {
           audioManager.toggleBackgroundMusic(true);
         }
@@ -309,7 +296,6 @@ export default function Sidebar() {
   
   // Function to handle complete selection
   const handleCompleteSelection = async () => {
-    // Check if any changes were made
     if (!hasSelectionChanged()) {
       alert("You have not made any changes yet!");
       return;
@@ -317,11 +303,8 @@ export default function Sidebar() {
     
     // Save selections to localStorage
     localStorage.setItem("userSelections", JSON.stringify(selections));
-    
-    // Update last saved selections
     setLastSavedSelections({...selections});
     
-    // Send selections to backend
     const success = await sendSelectionsToBackend(selections);
     
     // Check if persona changed and update music if needed
@@ -339,15 +322,12 @@ export default function Sidebar() {
     });
     window.dispatchEvent(event);
     
-    // Close any open submenus
     setOpenSubmenus({});
     
     // Provide feedback
     if (success) {
-      // alert("Your selection has been saved!");
       setIsExpanded(!isExpanded);
     } else {
-      // Even if backend fails, the frontend will still update
       alert("Your selection has been saved locally, but there was an issue updating the backend.");
     }
   };
@@ -373,9 +353,6 @@ export default function Sidebar() {
       submenu: ["English", "Malay"],
     },
   ];
-
-  // Calculate default slider position (66% of max)
-  const defaultSliderPosition = maxVolume * 0.66;
 
   return (
     <div className="sidebar-container">
