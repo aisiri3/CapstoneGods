@@ -1,107 +1,101 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
-// NOTE! THE LETTERS ARE NOT THE SAME AS VISCEMES!!!!!
-/*
-A -- Closed mouth for the "P", "B", and "M" sounds
-B -- Most consonants (“K”, “S”, “T”, etc.) + "EE" sound
-*/
+/**
+ * LipSyncController - A React component that manages lip synchronization for 3D avatars
+ * 
+ * This system uses Rhubarb phoneme data to control morph targets on a 3D face mesh,
+ * creating realistic lip movements that match speech audio. It supports both single
+ * and multi-target morph configurations for complex mouth shapes, vowel enhancement
+ * for better articulation, and natural transitions between phonemes.
+ * 
+ * The controller handles audio sync timing, smooth transitions between visemes,
+ * anticipation of upcoming phonemes, proper handling of pauses in speech, and
+ * automatic cleanup when unmounted.
+ */
 
-// Mapping between Rhubarb phonemes and your avatar's viseme indices
-// Modified to support multiple morph targets for a single phoneme
+// Mapping between Rhubarb phonemes and avatar's viseme indices
+// Supports both direct morphTarget indices and multi-target configurations
 const PHONEME_TO_VISEME = {
   'A': {
     // "P" SOUND
     type: 'multi',
     targets: {
-      // 'mouthRollLower':0.05,
-      // 'mouthRollUpper':0.05,
       'viseme_PP': 1.3,
     }
   },
-  // 'B': 52,  // viseme_RR NOT SURE - REPLACED WITH CUSTOM TARGETS
   'B': {
-    // "EE" SOUND -- A BIT HARD TO GET THE MOUTH SHAPE
+    // "EE" SOUND
     type: 'multi',
     targets: {
-      'mouthUpperUpLeft': 0.2,  // Assuming these are the indices or names of your morph targets
-      'mouthUpperUpRight': 0.2,  // Adjust the values as needed (intensity)
+      'mouthUpperUpLeft': 0.2,
+      'mouthUpperUpRight': 0.2,
       'mouthLowerDownLeft': 0.4,
       'mouthLowerDownRight': 0.4,
-      // 'viseme_e': 0.1,
       'viseme_I': 0.15,
-      // 'viseme_FF': 0.2
     }
   },
-  'C': 54,  // viseme_E NOT SURE
+  'C': 54,  // viseme_E
   'D': {
     // "AA" SOUND
     type: 'multi',
     targets: {
-      'mouthUpperUpLeft': 0.2,  // Assuming these are the indices or names of your morph targets
-      'mouthUpperUpRight': 0.2,  // Adjust the values as needed (intensity)
+      'mouthUpperUpLeft': 0.2,
+      'mouthUpperUpRight': 0.2,
       'viseme_aa': 0.3,
     }
   },
-  'E': 54,  // viseme_E CORRECT
-  'F': 57,  // viseme_U UPDATED
+  'E': 54,  // viseme_E
+  'F': 57,  // viseme_U
   'G': {
     // "FF" & "V"
     type: 'multi',
     targets: {
-      'mouthUpperUpLeft': 0.1,  // Assuming these are the indices or names of your morph targets
-      'mouthUpperUpRight': 0.1,  // Adjust the values as needed (intensity)
+      'mouthUpperUpLeft': 0.1,
+      'mouthUpperUpRight': 0.1,
       'viseme_FF': 1.3
     }
   },
-  'H': 52,  // viseme_RR UPDATED
+  'H': 52,  // viseme_RR
   'X': 43,  // viseme_sil (rest position)
 };
 
-// Function to get morph target index (or handle by name if your model uses names)
+// Enhanced vowel mapping for better mouth openness
+// Applies additional shape influence for improved vowel articulation
+const VOWEL_ENHANCEMENT = {
+  'F': { viseme: 57, intensity: 0.35 },  // "UU"
+  'H': { viseme: 52, intensity: 0.6 },   // "L"
+  'E': { viseme: 54, intensity: 0.8 },   // "ER"
+};
+
+// Configuration parameters for fine-tuning lip sync behavior
+const VISEME_INTENSITY = 1.4;        // Base intensity of mouth movements
+const VOWEL_BOOST = 0.3;             // Additional intensity for vowel sounds
+const SMOOTHING_FACTOR = 0.2;        // Smoothness of transitions (lower = smoother)
+const ANTICIPATION_TIME = 0;         // Look ahead time for next phoneme (seconds)
+const HOLD_FACTOR = 0.2;             // How long to hold visemes at full strength
+const MIN_DURATION_THRESHOLD = 0.05; // Minimum phoneme duration to include (seconds)
+const GAP_THRESHOLD = 0.04;          // Maximum gap for continuous speech (seconds)
+const DEFAULT_MOUTH_OPENNESS = 0.05; // Default minimum mouth openness during speech
+const GAP_INTENSITY = 0.1;           // Intensity of mouth movement during gaps
+const VOWEL_FADE_TIME = 0.01;        // Time to fade between vowel enhancements (seconds)
+const AUDIO_SYNC_OFFSET = 0.15;      // Offset to address slight delay in lip movements
+
+// Helper function to get morph target index from name or index
 const getMorphTargetIndex = (mesh, targetName) => {
   // If targetName is a number, return it directly
   if (typeof targetName === 'number') return targetName;
   
-  // Otherwise, assume it's a name and try to find its index
-  // This depends on your model's implementation
-  // For Three.js models that use named morph targets:
+  // Otherwise, look up by name in the morphTargetDictionary
   const morphTargetDictionary = mesh.morphTargetDictionary;
   if (morphTargetDictionary && morphTargetDictionary[targetName] !== undefined) {
     return morphTargetDictionary[targetName];
   }
   
-  // If you're using direct indices:
+  // Fallback to using the name as an index
   console.warn(`Morph target "${targetName}" not found, falling back to index`);
   return targetName;
 };
-
-// Enhanced vowel mapping for better mouth openness
-// This will apply additional shape influence for better vowel articulation
-const VOWEL_ENHANCEMENT = {
-  // 'A': { viseme: 44, intensity: 1 },  // 
-  // 'D': { viseme: 53, intensity: 0.2 },  // "AA"
-  'F': { viseme: 57, intensity: 0.35 },  // "UU"
-  'H': { viseme: 52, intensity: 0.6 },  // "L"
-  'E': { viseme: 54, intensity: 0.8 },  // "ER"
-  // 'B' is now handled specially, so removed from here
-  // 'E': { viseme: 54, intensity: 0.2 },  // 'eh' needs medium opening
-};
-
-// Customizable parameters for fine-tuning
-const VISEME_INTENSITY = 1.4;        // Base intensity of mouth movements
-const VOWEL_BOOST = 0.3;             // Additional intensity for vowel sounds
-const SMOOTHING_FACTOR = 0.1;       // Smoothness of transitions (lower = smoother)
-const ANTICIPATION_TIME = 0;      // Look ahead time for next phoneme (seconds)
-const HOLD_FACTOR = 0.2;             // How long to hold visemes at full strength
-const MIN_DURATION_THRESHOLD = 0.01; // Minimum phoneme duration to include (seconds)
-const GAP_THRESHOLD = 0.04;          // Maximum gap for continuous speech (seconds)
-const DEFAULT_MOUTH_OPENNESS = 0.05; // Default minimum mouth openness during speech
-const GAP_INTENSITY = 0.1;           // Intensity of mouth movement during gaps
-const VOWEL_FADE_TIME = 0.01;        // Time to fade between vowel enhancements (seconds)
-
-// Address slight delay in lip movements
-const AUDIO_SYNC_OFFSET = 0.15; // Negative value makes lips move earlier than audio
 
 export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElement }) {
   const animationFrameIdRef = useRef(null);
@@ -121,13 +115,11 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
       
       // Enhance specific vowel phonemes for better mouth shapes
       processedData = processedData.map(mark => {
-        // Identify if this is a vowel phoneme that needs enhancement
         const isVowel = Object.keys(VOWEL_ENHANCEMENT).includes(mark.value);
         
         return {
           ...mark,
           isVowel,
-          // For vowels, apply enhanced intensity
           effectiveIntensity: isVowel ? 
             VISEME_INTENSITY + VOWEL_BOOST : 
             VISEME_INTENSITY
@@ -153,9 +145,9 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
                 start: currentEnd,
                 end: nextStart,
                 value: 'A', // Neutral slightly open mouth
-                isFillerPhoneme: true, // Mark as filler so we can handle it specially
+                isFillerPhoneme: true,
                 isVowel: false,
-                effectiveIntensity: VISEME_INTENSITY * 0.6 // Lower intensity for fillers
+                effectiveIntensity: VISEME_INTENSITY * 0.6
               });
             }
           }
@@ -165,8 +157,6 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
       
       // Store the processed data
       visemeTimingsRef.current = processedData;
-      
-      console.log("Processed", processedData.length, "mouth cues with vowel enhancement");
     }
   }, [rhubarbData]);
   
@@ -174,7 +164,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
   const applyViseme = (visemeConfig, intensity, smoothingFactor) => {
     if (!meshRef.current?.morphTargetInfluences) return;
     
-    // Handle multi-target viseme (like 'B' phoneme)
+    // Handle multi-target viseme
     if (typeof visemeConfig === 'object' && visemeConfig.type === 'multi') {
       // Apply each target with its specific intensity
       Object.entries(visemeConfig.targets).forEach(([targetName, targetIntensity]) => {
@@ -190,7 +180,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
         }
       });
     } 
-    // Handle single-target viseme (traditional)
+    // Handle single-target viseme
     else if (typeof visemeConfig === 'number') {
       if (meshRef.current.morphTargetInfluences[visemeConfig] !== undefined) {
         meshRef.current.morphTargetInfluences[visemeConfig] = 
@@ -215,7 +205,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
           meshRef.current.morphTargetInfluences[visemeConfig] *= (1 - smoothingFactor);
         }
       } else if (typeof visemeConfig === 'object' && visemeConfig.type === 'multi') {
-        // Multi-target (like our 'B' phoneme)
+        // Multi-target
         Object.entries(visemeConfig.targets).forEach(([targetName, _]) => {
           const targetIndex = getMorphTargetIndex(meshRef.current, targetName);
           if (targetIndex !== undefined && meshRef.current.morphTargetInfluences[targetIndex] !== undefined) {
@@ -225,7 +215,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
       }
     });
     
-    // Also reset vowel enhancement targets
+    // Reset vowel enhancement targets
     Object.values(VOWEL_ENHANCEMENT).forEach(enhancementConfig => {
       if (meshRef.current.morphTargetInfluences[enhancementConfig.viseme] !== undefined) {
         meshRef.current.morphTargetInfluences[enhancementConfig.viseme] *= (1 - smoothingFactor);
@@ -264,10 +254,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
       return;
     }
     
-    // IMPORTANT: Using the consistent DEFAULT_MOUTH_OPENNESS value from settings
-    const defaultVisemeIndex = PHONEME_TO_VISEME['A']; // Using 'A' as a default slight open mouth position
-    
-    // Calculate current audio time
+    // Calculate current audio time with sync offset
     const audioTime = audioElement.currentTime + AUDIO_SYNC_OFFSET;
     
     // Find current and next visemes
@@ -327,10 +314,11 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
       }
     }
     
-    // First gently reset all visemes
+    // Reset all visemes gently
     resetAllMorphTargets(SMOOTHING_FACTOR * 0.5);
     
-    // Always ensure minimum mouth openness during speech only if DEFAULT_MOUTH_OPENNESS > 0
+    // Apply minimum mouth openness during speech
+    const defaultVisemeIndex = PHONEME_TO_VISEME['A'];
     if (DEFAULT_MOUTH_OPENNESS > 0 && typeof defaultVisemeIndex === 'number' && 
         meshRef.current.morphTargetInfluences[defaultVisemeIndex] !== undefined) {
       meshRef.current.morphTargetInfluences[defaultVisemeIndex] = 
@@ -342,7 +330,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
       const currentVisemeConfig = PHONEME_TO_VISEME[currentMark.value];
       
       if (currentVisemeConfig !== undefined) {
-        // Use the effective intensity from pre-processing (higher for vowels)
+        // Use the effective intensity from pre-processing
         const dynamicIntensity = currentMark.effectiveIntensity || VISEME_INTENSITY;
         
         // Apply the viseme with a dynamic smoothing factor
@@ -369,19 +357,18 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
               THREE.MathUtils.lerp(
                 meshRef.current.morphTargetInfluences[vowelData.viseme],
                 dynamicIntensity * vowelData.intensity,
-                SMOOTHING_FACTOR + (currentProgress * 0.3) // Even faster onset for vowels
+                SMOOTHING_FACTOR + (currentProgress * 0.3)
               );
           }
         }
       }
     } else if (isInGap && audioElement.currentTime > 0.1 && DEFAULT_MOUTH_OPENNESS > 0) {
-      // We're in a gap between phonemes but audio is playing
+      // Handle gaps between phonemes while audio is playing
       
-      // Check if we recently played a vowel that needs lingering influence
+      // Apply lingering vowel influence if we recently played a vowel
       const timeSinceLastVowel = audioTime - lastVowelTimeRef.current;
       
       if (timeSinceLastVowel < VOWEL_FADE_TIME && lastVowelRef.current) {
-        // We recently played a vowel, maintain some of its influence
         const fadeRatio = 1 - (timeSinceLastVowel / VOWEL_FADE_TIME);
         const vowelData = VOWEL_ENHANCEMENT[lastVowelRef.current];
         
@@ -398,7 +385,6 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
       }
       
       // Apply a natural "talking" movement instead of closing the mouth completely
-      // Get a slightly open mouth viseme (using 'A' as it's a neutral open position)
       const talkingVisemeConfig = PHONEME_TO_VISEME['A'];
       
       if (talkingVisemeConfig !== undefined && typeof talkingVisemeConfig === 'number') {
@@ -434,7 +420,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
           applyViseme(
             nextVisemeConfig, 
             anticipationIntensity, 
-            SMOOTHING_FACTOR * 0.5 // Gentler for anticipation
+            SMOOTHING_FACTOR * 0.5
           );
           
           nextVisemeRef.current = nextVisemeConfig;
@@ -446,7 +432,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
     animationFrameIdRef.current = requestAnimationFrame(updateVisemes);
   };
   
-  // Set up animation loop when component mounts or parameters change
+  // Set up and clean up animation loop
   useEffect(() => {
     // Clean up any existing animation frame
     if (animationFrameIdRef.current) {
@@ -454,10 +440,8 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
       animationFrameIdRef.current = null;
     }
     
-    // Only start animation if we have the necessary data
+    // Start animation if we have the necessary data
     if (meshRef.current && rhubarbData && rhubarbData.length > 0 && audioElement) {
-      console.log("Starting enhanced lipsync animation with vowel optimization and custom 'B' phoneme handling");
-      
       // Start the animation loop
       animationFrameIdRef.current = requestAnimationFrame(updateVisemes);
       
@@ -471,7 +455,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
       // Add event listeners
       audioElement.addEventListener('play', handlePlay);
       
-      // Clean up
+      // Clean up on unmount
       return () => {
         if (animationFrameIdRef.current) {
           cancelAnimationFrame(animationFrameIdRef.current);
@@ -490,7 +474,7 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
                 meshRef.current.morphTargetInfluences[visemeConfig] = 0;
               }
             } else if (typeof visemeConfig === 'object' && visemeConfig.type === 'multi') {
-              // Multi-target (like our 'B' phoneme)
+              // Multi-target
               Object.entries(visemeConfig.targets).forEach(([targetName, _]) => {
                 const targetIndex = getMorphTargetIndex(meshRef.current, targetName);
                 if (targetIndex !== undefined && meshRef.current.morphTargetInfluences[targetIndex] !== undefined) {
@@ -504,5 +488,6 @@ export function LipSyncController({ meshRef, rhubarbData, isPlaying, audioElemen
     }
   }, [meshRef, rhubarbData, isPlaying, audioElement]);
   
-  return null; // Controller component with no visual rendering
+  // This is a controller component with no visual rendering
+  return null;
 }
