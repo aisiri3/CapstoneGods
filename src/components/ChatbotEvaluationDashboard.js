@@ -21,6 +21,12 @@ import "@/styles/Eval.css";
 // Register the required components
 ChartJS.register(LinearScale, PointElement, LineElement, ChartTooltip, Legend);
 
+/**
+ * ChatbotEvaluationDashboard Component
+ * 
+ * This component provides a dashboard for evaluating chatbot responses.
+ */
+
 export default function ChatbotEvaluationDashboard() {
   const router = useRouter();
   const [entries, setEntries] = useState([]);

@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import "@/styles/SideBar.css";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/Tooltip";
-// icons
 import { AlignLeft, AlignRight, ChevronDown, Settings, UserPen, Check } from "lucide-react";
 import { TbMusic, TbMusicOff } from "react-icons/tb";
 

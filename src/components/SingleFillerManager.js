@@ -2,6 +2,19 @@
 
 import { useRef, useState, useEffect } from 'react';
 
+/**
+ * SingleFillerManager Hook
+ * 
+ * Manages loading and playback of "filler" animations and audio for avatars
+ * during processing states, and handles transitions between fillers and responses.
+ * 
+ * This hook provides functionality to:
+ * - Load filler data based on avatar selection (language, gender, persona)
+ * - Play single filler animations during response processing
+ * - Queue and transition to real responses when ready
+ * - Clean up audio resources properly
+ */
+
 export default function useSingleFillerManager(avatarStateCallback) {
   const [fillerData, setFillerData] = useState([]);
   const [isPlayingFiller, setIsPlayingFiller] = useState(false);
@@ -31,7 +44,6 @@ export default function useSingleFillerManager(avatarStateCallback) {
     try {
       const basePath = getFillerPath(avatarSelection);
       
-      // First, fetch the index file that contains the list of available fillers
       const indexResponse = await fetch(`${basePath}/index.json`);
       
       if (!indexResponse.ok) {
@@ -41,35 +53,28 @@ export default function useSingleFillerManager(avatarStateCallback) {
       const indexData = await indexResponse.json();
       const fillerCount = indexData.count || 5; // Default to 5 if count is not provided
       
-      // Load each filler's lipsync data
       const fillers = [];
       
       for (let i = 1; i <= fillerCount; i++) {
         try {
-          // Construct URLs
           const audioUrl = `${basePath}/filler_${i}.wav`;
           const lipsyncUrl = `${basePath}/filler_${i}_lipsync.json`;
           
           const lipsyncResponse = await fetch(lipsyncUrl);
           
           if (!lipsyncResponse.ok) {
-            console.warn(`Could not load lipsync for filler ${i}`);
             continue;
           }
           
           const lipsyncData = await lipsyncResponse.json();
           
-          // Make sure we have mouth cues
           if (!lipsyncData.mouthCues || !Array.isArray(lipsyncData.mouthCues)) {
-            console.warn(`Invalid lipsync data for filler ${i}`);
             continue;
           }
           
-          // Check if audio file exists
           const audioResponse = await fetch(audioUrl, { method: 'HEAD' });
           
           if (!audioResponse.ok) {
-            console.warn(`Could not load audio for filler ${i}`);
             continue;
           }
           
@@ -97,7 +102,6 @@ export default function useSingleFillerManager(avatarStateCallback) {
   
   // Function to clean up all audio resources
   const cleanupAudioResources = () => {
-    // Clean up current audio
     if (fillerAudioRef.current) {
       fillerAudioRef.current.pause();
       fillerAudioRef.current.onended = null;
@@ -108,7 +112,6 @@ export default function useSingleFillerManager(avatarStateCallback) {
       fillerAudioRef.current = null;
     }
     
-    // Clean up all tracked audio elements
     createdAudioElementsRef.current.forEach(audio => {
       if (audio) {
         try {
@@ -125,14 +128,12 @@ export default function useSingleFillerManager(avatarStateCallback) {
       }
     });
     
-    // Clear the tracking array
     createdAudioElementsRef.current = [];
   };
   
   // Function to play a single filler
   const playSingleFiller = () => {
     if (fillerData.length === 0) {
-      console.log("Cannot play filler - no fillers available");
       return;
     }
     
@@ -140,21 +141,14 @@ export default function useSingleFillerManager(avatarStateCallback) {
       stopFiller();
     }
     
-    // Reset pending response
     pendingResponseRef.current = null;
     responseReadyRef.current = false;
-    
-    // Set the processing ref directly to ensure it's updated immediately
     isProcessingRef.current = true;
-    
-    // Set state for tracking in UI
     setIsPlayingFiller(true);
     
-    // Get the current filler to play
     const fillerToPlay = fillerData[currentFillerIndexRef.current];
     
     if (!fillerToPlay) {
-      console.error("No filler found at index", currentFillerIndexRef.current);
       currentFillerIndexRef.current = 0;
       
       if (fillerData.length > 0) {
@@ -165,14 +159,12 @@ export default function useSingleFillerManager(avatarStateCallback) {
       return;
     }
     
-    // Test if the audio file exists and is accessible
     fetch(fillerToPlay.audioUrl)
       .then(response => {
         if (!response.ok) {
           throw new Error(`Failed to load audio file: ${response.status}`);
         }
         
-        // Send to avatar
         if (avatarStateCallback) {
           avatarStateCallback({
             lipSync: fillerToPlay.lipsyncData,
@@ -182,154 +174,94 @@ export default function useSingleFillerManager(avatarStateCallback) {
           });
         }
         
-        // Clean up just the current audio element
         if (fillerAudioRef.current) {
           fillerAudioRef.current.pause();
           fillerAudioRef.current.onended = null;
           fillerAudioRef.current.onerror = null;
         }
         
-        // Create tracking audio
         const audio = new Audio(fillerToPlay.audioUrl);
         audio.volume = 0.01; // Nearly silent
         
-        // Track this audio element for cleanup
         createdAudioElementsRef.current.push(audio);
-        
-        // Set as current audio
         fillerAudioRef.current = audio;
         
-        // When this filler ends, check if response is ready
         audio.onended = () => {
-          console.log("Filler playback completed");
-          // Increment to the next filler for next time
           currentFillerIndexRef.current = (currentFillerIndexRef.current + 1) % fillerData.length;
-          
-          // Remove this audio element from current reference
           fillerAudioRef.current = null;
           
-          // If response is ready, transition to it
           if (responseReadyRef.current && pendingResponseRef.current) {
-            console.log("Response is ready, transitioning");
-            // Wait 1.5 seconds before playing response
             setTimeout(() => {
-              // Reset states
               setIsPlayingFiller(false);
               responseReadyRef.current = false;
               
-              // Clean up all audio resources before playing response
               cleanupAudioResources();
               
-              // Send the response to avatar
               if (avatarStateCallback && pendingResponseRef.current) {
-                console.log("Playing response after filler completed");
                 avatarStateCallback(pendingResponseRef.current);
               }
               
-              // Clear the pending response
               pendingResponseRef.current = null;
             }, 1500);
           } else {
-            console.log("No response ready, stopping filler playback");
-            // Just stop - we only play one filler
             setIsPlayingFiller(false);
           }
         };
         
-        // Handle errors
         audio.onerror = (e) => {
-          console.error("Audio error");
           fillerAudioRef.current = null;
           setIsPlayingFiller(false);
-          
-          // Increment to the next filler for next time
           currentFillerIndexRef.current = (currentFillerIndexRef.current + 1) % fillerData.length;
         };
         
-        // Play the audio
         audio.play().catch((error) => {
-          console.error("Error playing audio");
           fillerAudioRef.current = null;
           setIsPlayingFiller(false);
-          
-          // Increment to the next filler for next time
           currentFillerIndexRef.current = (currentFillerIndexRef.current + 1) % fillerData.length;
         });
       })
       .catch((error) => {
-        console.error("Error fetching audio");
         setIsPlayingFiller(false);
-        
-        // Increment to the next filler for next time
         currentFillerIndexRef.current = (currentFillerIndexRef.current + 1) % fillerData.length;
       });
   };
 
   // Function to transition from filler to response
   const transitionToResponse = () => {
-    // Only clean up if no filler is playing
     if (!fillerAudioRef.current) {
-      console.log("No filler playing, transitioning after delay");
-      // Wait 1.5 seconds before playing response
       setTimeout(() => {
-        // Reset states
         setIsPlayingFiller(false);
         responseReadyRef.current = false;
         
-        // Clean up all audio resources before playing response
         cleanupAudioResources();
         
-        // Send the response to avatar
         if (avatarStateCallback && pendingResponseRef.current) {
-          console.log("Playing queued response");
           avatarStateCallback(pendingResponseRef.current);
-        } else {
-          console.log("No pending response to play");
         }
         
-        // Clear the pending response
         pendingResponseRef.current = null;
       }, 1500);
-    } else {
-      console.log("Filler is currently playing, will transition when it ends");
-      // Let the current audio's onended handler handle the transition
-      // No need to do anything here
     }
   };
 
   // Function to queue a response
   const queueResponse = (responseData) => {
-    console.log("Response queued, isPlayingFiller:", isPlayingFiller);
-    
-    // Store the response
     pendingResponseRef.current = responseData;
-    
-    // Mark response as ready
     responseReadyRef.current = true;
     
-    // If no filler is playing, transition immediately
     if (!isPlayingFiller || !fillerAudioRef.current) {
-      console.log("No filler playing, transitioning immediately to response");
       transitionToResponse();
-    } else {
-      console.log("Filler is playing, will transition when it completes");
-      // Otherwise, current filler will detect the ready response when it ends
     }
   };
 
   // Function to stop the filler
   const stopFiller = async () => {
-    // Clear any pending response
     pendingResponseRef.current = null;
     responseReadyRef.current = false;
     
-    // Clean up all audio resources
     cleanupAudioResources();
-    
-    // Update state
     setIsPlayingFiller(false);
     
-    // Send a null update to avatar to reset its state
     if (avatarStateCallback) {
       avatarStateCallback({
         lipSync: null,
@@ -339,7 +271,6 @@ export default function useSingleFillerManager(avatarStateCallback) {
       });
     }
     
-    // Add a forced delay before any future audio is sent
     return new Promise(resolve => setTimeout(resolve, 200));
   };
   
