@@ -11,6 +11,7 @@ import json
 import gc
 import torch
 import re
+import emoji
 
 # Import English workflows
 from workflows.tts.coqui import get_tts_model as get_english_tts_model
@@ -428,102 +429,6 @@ def get_speaker_path(avatar_config=None):
     print(f"Using speaker path: {speaker_path} for gender={gender}, persona={persona}")
     return speaker_path
 
-def process_speech(text, avatar_config=None):
-    """
-    Process speech from text input, using the appropriate model for text generation,
-    TTS for audio generation, and Rhubarb for lipsync.
-    
-    Args:
-        text (str): The input text from the user
-        avatar_config (dict, optional): Avatar configuration from frontend
-        
-    Returns:
-        dict: Contains the response text, audio file path, and lipsync data
-    """
-    # Use provided config or fallback to current selections
-    config = avatar_config or current_avatar_selections
-    language = config.get("language", "English")
-    gender = config.get("gender", "Male")
-    
-    output_path = current_app.config.get('TTS_OUTPUT_PATH', 'outputs/user_output.wav')
-    
-    try:
-        # Process based on language
-        if language == "English":
-            # Generate response using Llama
-            response_text = generate_llama_response(text, avatar_config=config)
-            
-            # Get TTS model
-            model = get_english_tts()
-            
-            # Get appropriate speaker path based on avatar config
-            speaker_path = get_speaker_path(avatar_config)
-            
-            # Convert response to speech
-            english_tts_workflow(model, response_text, speaker_path, output_path)
-        
-        else:  # Malay
-            # Generate response using Mallam (direct call to module function)
-            print("Generating Malay response using Mallam...")
-            response_text = generate_mallam_response(text)
-            
-            # Select the appropriate speaker based on gender
-            speaker_name = "Osman" if gender == "Male" else "Yasmin"
-            
-            # Run the Malay TTS subprocess
-            tts_success = run_malay_tts(response_text, speaker_name, output_path)
-            
-            if not tts_success:
-                print("Warning: Malay TTS subprocess failed. Using fallback message.")
-                response_text = "Maaf, saya menghadapi masalah teknikal sekarang."
-                # Try again with a simpler message
-                run_malay_tts(response_text, speaker_name, output_path)
-        
-        # Generate lipsync data
-        lipsync_data = generate_rhubarb_lipsync(output_path)
-        
-        # Get just the mouth cues from the lipsync data
-        mouth_cues = lipsync_data.get("mouthCues", [])
-        
-        # Return all necessary data
-        return {
-            "response_text": response_text,
-            "audio_path": output_path,
-            "mouth_cues": mouth_cues
-        }
-    
-    except Exception as e:
-        print(f"Error in process_speech: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        # Provide a fallback response
-        fallback_response = "I'm sorry, but I'm having trouble processing your request right now."
-        if language == "Malay":
-            fallback_response = "Maaf, saya menghadapi masalah dalam memproses permintaan anda sekarang."
-        
-        # Try to generate audio for the fallback response
-        try:
-            if language == "English":
-                model = get_english_tts()
-                speaker_path = get_speaker_path(avatar_config)
-                english_tts_workflow(model, fallback_response, speaker_path, output_path)
-            else:  # Malay
-                speaker_name = "Osman" if gender == "Male" else "Yasmin"
-                run_malay_tts(fallback_response, speaker_name, output_path)
-            
-            # Generate lipsync data for fallback
-            lipsync_data = generate_rhubarb_lipsync(output_path)
-            mouth_cues = lipsync_data.get("mouthCues", [])
-        except Exception as e2:
-            print(f"Error generating fallback audio: {e2}")
-            mouth_cues = []
-        
-        return {
-            "response_text": fallback_response,
-            "audio_path": output_path,
-            "mouth_cues": mouth_cues
-        }
 
 def encode_audio_to_base64(audio_path):
     """Convert audio file to base64 for transmission to frontend."""
@@ -569,12 +474,32 @@ def process_speech_modified(text, avatar_config=None):
     try:
         # Process based on language
         if language == "English":
-            
+            # Generate response using Llama
+            llama_start = time.time()
             response_text = generate_llama_response(text, avatar_config=config)
-            print(f'response_text {response_text}' )
+            llama_time = time.time() - llama_start
+            print(f'Llama response generated in {llama_time:.2f} seconds: {response_text}')
+            
+            # Clean up special characters that might cause issues with TTS
+            cleaned_response = re.sub(r'[\[\]\*]', '', response_text)
+            cleaned_response = emoji.replace_emoji(cleaned_response, replace='')
+
+            # Replace slashes with "or" for better TTS pronunciation
+            cleaned_response = re.sub(r'\s*/\s*', ' or ', cleaned_response)  # Handles "word/word" with spaces
+            cleaned_response = re.sub(r'(\w)/(\w)', r'\1 or \2', cleaned_response)  # Handles "word/word" without spaces
+            print(f'Cleaned response for TTS: {cleaned_response}')
+
+            # Get TTS model
             model = get_english_tts()
+
+            # Get appropriate speaker path based on avatar config
             speaker_path = get_speaker_path(avatar_config)
-            english_tts_workflow(model, response_text, speaker_path, output_path)
+
+            # Convert cleaned response to speech
+            tts_start_time = time.time()
+            english_tts_workflow(model, cleaned_response, speaker_path, output_path)
+            tts_time = time.time() - tts_start_time
+            print(f"English TTS inference completed in {tts_time:.2f} seconds")
         
         else:  # Malay language processing
             # Import Google Cloud Translation API

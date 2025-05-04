@@ -14,7 +14,9 @@ pandas
 openpyxl 
 sentence-transformers 
 numpy
+emoji
 PyJWT
+bangla==0.0.2
 
 # GOOGLE TRANSLATE
 google-cloud
