@@ -19,7 +19,6 @@ def generate_rhubarb_lipsync(audio_path):
         # Get the absolute path to the Rhubarb executable
         base_dir = Path(__file__).resolve().parents[1]  # Go up 2 levels from current file
         rhubarb_path = base_dir / "Rhubarb-Lip-Sync-1.13.0" / "rhubarb"
-        
         # Create output JSON path in the same directory as audio
         audio_dir = Path(audio_path).parent
         json_filename = f"{Path(audio_path).stem}_lipsync.json"
